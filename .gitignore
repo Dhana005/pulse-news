@@ -32,9 +32,15 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.local.example
 
 # vercel
 .vercel
+
+# Claude Code local settings — per-developer, and in this repo's history has
+# picked up API keys embedded in auto-approved Bash command permission
+# strings. Never commit this.
+.claude/settings.local.json
 
 # typescript
 *.tsbuildinfo
