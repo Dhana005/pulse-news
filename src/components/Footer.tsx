@@ -26,7 +26,7 @@ const LINK_COLUMNS = [
     heading: "உதவி",
     links: [
       { label: "அடிக்கடி கேட்கப்படும் கேள்விகள்", href: "#" },
-      { label: "தனியுரிமைக் கொள்கை", href: "#" },
+      { label: "தனியுரிமைக் கொள்கை", href: "/ta/privacy" },
       { label: "பயன்பாட்டு விதிமுறைகள்", href: "#" },
       { label: "தள வரைபடம்", href: "#" },
       { label: "RSS", href: "#" },

@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { Hind_Madurai, Poppins } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
+
+// Google AdSense Auto ads — one script, Google decides ad placement across
+// the whole site. Publisher ID is not secret (it's public in every page's
+// HTML by design), so it's fine to hardcode rather than env-var it.
+const ADSENSE_CLIENT_ID = "ca-pub-5364676429059788";
 
 const hindMadurai = Hind_Madurai({
   variable: "--font-hind-madurai",
@@ -40,8 +46,17 @@ export default function RootLayout({
     <html lang="ta" className={`${hindMadurai.variable} ${poppins.variable} h-full antialiased`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <meta name="google-adsense-account" content={ADSENSE_CLIENT_ID} />
       </head>
-      <body className="min-h-full flex flex-col bg-bg text-text">{children}</body>
+      <body className="min-h-full flex flex-col bg-bg text-text">
+        {children}
+        <Script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+      </body>
     </html>
   );
 }
