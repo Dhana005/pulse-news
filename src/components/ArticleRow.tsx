@@ -17,8 +17,8 @@ export default function ArticleRow({ article }: { article: Article }) {
       <div className="flex flex-col gap-1.5 md:gap-2 min-w-0 flex-1">
         <span className="text-[11.5px] md:text-[12px] font-bold text-accent">{getCategoryLabel(article.category)}</span>
         <span className="text-[15.5px] md:text-[19px] font-semibold leading-[1.4]">{article.headline}</span>
-        <span className="hidden md:block text-[14.5px] leading-[1.6] text-text-muted">{article.dek}</span>
-        <span className="text-[12px] md:text-[12.5px] text-text-faint">மூலம்: {article.source} · {article.publishedAgo}</span>
+        {article.dek && <span className="hidden md:block text-[14.5px] leading-[1.6] text-text-muted">{article.dek}</span>}
+        <span className="text-[12px] md:text-[12.5px] text-text-faint">{article.publishedAgo}</span>
       </div>
     </Link>
   );

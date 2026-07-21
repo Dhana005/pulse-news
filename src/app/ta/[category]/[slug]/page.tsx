@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import PlaceholderMedia from "@/components/PlaceholderMedia";
 import ArticleMedia from "@/components/ArticleMedia";
 import RelatedList from "@/components/RelatedList";
+import ViewTracker from "@/components/ViewTracker";
 import { getCategoryLabel, isValidCategory } from "@/lib/categories";
 import { getArticle, getRelated } from "@/lib/data";
 
@@ -30,6 +31,7 @@ export default async function ArticlePage({ params }: { params: Params }) {
 
   return (
     <div className="flex flex-col flex-1">
+      <ViewTracker category={category} slug={slug} />
       <Header activeKey={category} />
       <main className="max-w-[1240px] w-full mx-auto px-4 md:px-10 pt-6 md:pt-8 pb-14 md:pb-[70px] grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 md:gap-12 flex-1">
         <article className="min-w-0">
@@ -52,9 +54,11 @@ export default async function ArticlePage({ params }: { params: Params }) {
           <h1 className="text-[26px] md:text-[38px] leading-[1.3] font-bold m-0 mt-4 mb-3.5 -tracking-[0.01em]">
             {article.headline}
           </h1>
-          <p className="text-[15.5px] md:text-[17px] leading-[1.6] text-text-muted m-0 mb-4.5 max-w-[60ch]">
-            {article.dek}
-          </p>
+          {article.dek && (
+            <p className="text-[15.5px] md:text-[17px] leading-[1.6] text-text-muted m-0 mb-4.5 max-w-[60ch]">
+              {article.dek}
+            </p>
+          )}
 
           <div className="flex items-center gap-4 mb-5 pb-5 border-b border-border">
             <PlaceholderMedia className="w-[38px] h-[38px] rounded-full shrink-0" />
@@ -99,7 +103,7 @@ export default async function ArticlePage({ params }: { params: Params }) {
 
           {article.sourceUrl ? (
             <div className="flex flex-col gap-4">
-              <p className="text-[15.5px] md:text-[17px] leading-[1.7] text-text-muted m-0">{article.dek}</p>
+              {article.dek && <p className="text-[15.5px] md:text-[17px] leading-[1.7] text-text-muted m-0">{article.dek}</p>}
               <a
                 href={article.sourceUrl}
                 target="_blank"

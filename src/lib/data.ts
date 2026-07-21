@@ -45,6 +45,20 @@ interface ArticleRow {
   tags: string[] | null;
 }
 
+// Some feeds (Oneindia Tamil's especially — verified against its raw RSS)
+// write a Tamil <title> but an English <description>, since that field is
+// meant for Facebook link-preview cards, not for display here. Rather than
+// show English text on a Tamil site, treat a dek as unusable unless Tamil
+// script makes up a real share of its letters — a stray transliterated word
+// or two shouldn't disqualify an otherwise-Tamil sentence.
+function isMostlyTamil(text: string): boolean {
+  const tamilLetters = (text.match(/[஀-௿]/g) ?? []).length;
+  const latinLetters = (text.match(/[A-Za-z]/g) ?? []).length;
+  const totalLetters = tamilLetters + latinLetters;
+  if (totalLetters === 0) return true; // numbers/punctuation only — nothing to object to
+  return tamilLetters / totalLetters >= 0.3;
+}
+
 function relativeTa(iso: string): string {
   const minutes = Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
   if (minutes < 60) return `${minutes} நிமிடம் முன்`;
@@ -54,13 +68,14 @@ function relativeTa(iso: string): string {
 }
 
 function toArticle(row: ArticleRow): Article {
+  const dek = row.dek ?? "";
   return {
     id: row.id,
     slug: row.slug,
     category: row.category_key,
     contentType: row.content_type,
     headline: row.headline,
-    dek: row.dek ?? "",
+    dek: isMostlyTamil(dek) ? dek : "",
     source: row.source ?? "",
     publishedAgo: relativeTa(row.published_at),
     author: row.author ?? row.source ?? "",
@@ -107,14 +122,41 @@ export async function getRelated(category: string, excludeSlug: string, count = 
   return (data ?? []).map(toArticle);
 }
 
+// Picks the most recent `limit` rows while capping how many can come from
+// any single source. Without this, one prolific/frequently-publishing
+// source (e.g. overnight, when most Tamil dailies go quiet) can crowd out
+// every other source in "latest across all categories" spots like the
+// homepage hero, trending widget, and ticker.
+function diversifyBySource<T>(rows: T[], limit: number, sourceOf: (row: T) => string, maxPerSource = 1): T[] {
+  const perSourceCount = new Map<string, number>();
+  const selected: T[] = [];
+  const leftover: T[] = [];
+  for (const row of rows) {
+    const src = sourceOf(row);
+    const used = perSourceCount.get(src) ?? 0;
+    if (used < maxPerSource && selected.length < limit) {
+      selected.push(row);
+      perSourceCount.set(src, used + 1);
+    } else {
+      leftover.push(row);
+    }
+  }
+  for (const row of leftover) {
+    if (selected.length >= limit) break;
+    selected.push(row);
+  }
+  return selected;
+}
+
 export async function getTrending(count = 5): Promise<Article[]> {
   const { data, error } = await supabase
     .from("articles")
     .select("*")
     .order("published_at", { ascending: false })
-    .limit(count);
+    .limit(Math.max(count * 8, 30));
   if (error) throw error;
-  return (data ?? []).map(toArticle);
+  const rows = diversifyBySource(data ?? [], count, (r) => r.source ?? "");
+  return rows.map(toArticle);
 }
 
 export async function getHeroFeed(): Promise<{ lead: Article; side: Article[] }> {
@@ -122,21 +164,72 @@ export async function getHeroFeed(): Promise<{ lead: Article; side: Article[] }>
     .from("articles")
     .select("*")
     .order("published_at", { ascending: false })
-    .limit(4);
+    .limit(30);
   if (error) throw error;
-  const articles = (data ?? []).map(toArticle);
+  const rows = diversifyBySource(data ?? [], 4, (r) => r.source ?? "");
+  const articles = rows.map(toArticle);
   const [lead, ...side] = articles;
   return { lead, side };
+}
+
+export async function getFeaturedArticles(count = 6): Promise<Article[]> {
+  const { data, error } = await supabase
+    .from("articles")
+    .select("*")
+    .order("published_at", { ascending: false })
+    .limit(Math.max(count * 8, 40));
+  if (error) throw error;
+  const rows = diversifyBySource(data ?? [], count, (r) => r.source ?? "");
+  return rows.map(toArticle);
+}
+
+export async function getMostRead(count = 5): Promise<Article[]> {
+  const { data, error } = await supabase
+    .from("articles")
+    .select("*")
+    .gt("published_at", new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString())
+    .order("view_count", { ascending: false })
+    .order("published_at", { ascending: false })
+    .limit(count);
+  if (error) throw error;
+  return (data ?? []).map(toArticle);
+}
+
+export async function searchArticles(query: string, limit = 24): Promise<Article[]> {
+  const term = query.trim();
+  if (!term) return [];
+  const pattern = `%${term}%`;
+  // Two parameterized ilike queries instead of a single .or(...) — .or()
+  // takes a raw comma-separated filter string, so interpolating user input
+  // into it would let a query containing "," or "(" alter the filter logic.
+  const [byHeadline, byDek] = await Promise.all([
+    supabase.from("articles").select("*").ilike("headline", pattern).order("published_at", { ascending: false }).limit(limit),
+    supabase.from("articles").select("*").ilike("dek", pattern).order("published_at", { ascending: false }).limit(limit),
+  ]);
+  if (byHeadline.error) throw byHeadline.error;
+  if (byDek.error) throw byDek.error;
+
+  const seen = new Set<string>();
+  const merged: ArticleRow[] = [];
+  for (const row of [...(byHeadline.data ?? []), ...(byDek.data ?? [])]) {
+    const key = `${row.category_key}::${row.slug}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(row);
+  }
+  merged.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+  return merged.slice(0, limit).map(toArticle);
 }
 
 export async function getTickerItems(): Promise<string[]> {
   const { data, error } = await supabase
     .from("articles")
-    .select("headline")
+    .select("headline, source")
     .order("published_at", { ascending: false })
-    .limit(4);
+    .limit(30);
   if (error) throw error;
-  return (data ?? []).map((r) => r.headline);
+  const rows = diversifyBySource(data ?? [], 4, (r) => r.source ?? "");
+  return rows.map((r) => r.headline);
 }
 
 // Horoscope — evergreen content_type, keyed by calendar date, not sourced

@@ -29,6 +29,9 @@ export const NEWSDATA_CATEGORIES: NewsDataCategoryConfig[] = [
   { category: "sports", targetCategory: "sports", contentType: "news", country: "in" },
   { category: "entertainment", targetCategory: "cinema", contentType: "cinema", country: "in" },
   { category: "world", targetCategory: "world", contentType: "news" }, // no country filter — global
+  { category: "business", targetCategory: "business", contentType: "news", country: "in" },
+  { category: "technology", targetCategory: "technology", contentType: "news", country: "in" },
+  { category: "lifestyle", targetCategory: "lifestyle", contentType: "news", country: "in" },
 ];
 
 export async function fetchNewsDataItems(

@@ -7,8 +7,11 @@ export const CATEGORIES: CategoryDef[] = [
   { key: "tamilnadu", label: "தமிழகம்" },
   { key: "india", label: "இந்தியா" },
   { key: "world", label: "உலகம்" },
+  { key: "business", label: "வணிகம்" },
+  { key: "technology", label: "தொழில்நுட்பம்" },
   { key: "sports", label: "விளையாட்டு" },
   { key: "cinema", label: "சினிமா" },
+  { key: "lifestyle", label: "லைஃப் ஸ்டைல்" },
 ];
 
 export const NAV_ITEMS = [{ key: "", label: "முகப்பு" }, ...CATEGORIES];

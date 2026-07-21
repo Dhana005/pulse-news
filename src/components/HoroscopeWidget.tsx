@@ -14,7 +14,7 @@ export default function HoroscopeWidget({
   const selected = readings[rashiIdx];
 
   return (
-    <section className="bg-surface border border-border rounded-[10px] p-5 md:p-7 mb-10 md:mb-14">
+    <section id="horoscope" className="bg-surface border border-border rounded-[10px] p-5 md:p-7 mb-10 md:mb-14 scroll-mt-32">
       <div className="flex items-baseline justify-between mb-5 gap-3 flex-wrap">
         <h2 className="text-[20px] md:text-[22px] font-bold m-0">இன்றைய ராசி பலன்</h2>
         <span className="text-[13px] text-text-faint">{today}</span>

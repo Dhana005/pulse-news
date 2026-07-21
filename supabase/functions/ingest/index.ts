@@ -75,10 +75,12 @@ const NEWSDATA_CATEGORIES: NewsDataCategoryConfig[] = [
   { category: "sports", targetCategory: "sports", contentType: "news", country: "in" },
   { category: "entertainment", targetCategory: "cinema", contentType: "cinema", country: "in" },
   { category: "world", targetCategory: "world", contentType: "news" },
+  { category: "business", targetCategory: "business", contentType: "news", country: "in" },
+  { category: "technology", targetCategory: "technology", contentType: "news", country: "in" },
+  { category: "lifestyle", targetCategory: "lifestyle", contentType: "news", country: "in" },
 ];
 
 const MAX_ITEMS_PER_SOURCE = 15;
-const DEK_MAX_LEN = 220;
 
 const xmlParser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
 
@@ -106,11 +108,6 @@ function stripHtml(input: string): string {
 function asArray<T>(value: T | T[] | undefined): T[] {
   if (value == null) return [];
   return Array.isArray(value) ? value : [value];
-}
-
-function truncateDek(text: string): string {
-  if (text.length <= DEK_MAX_LEN) return text;
-  return text.slice(0, DEK_MAX_LEN).trimEnd() + "…";
 }
 
 // Must match src/lib/ingest/run.ts's slugFor exactly (same Web Crypto API,
@@ -177,7 +174,7 @@ async function buildRow(item: any, category: string, contentType: ContentType, s
     content_type: contentType,
     language: "ta",
     headline: item.title,
-    dek: truncateDek(item.description || item.title),
+    dek: item.description || item.title,
     body: [],
     source: sourceLabel,
     source_url: item.link,

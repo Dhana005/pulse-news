@@ -4,7 +4,6 @@ import { FEED_SOURCES } from "./sources";
 import { fetchNewsDataItems, NEWSDATA_CATEGORIES } from "./newsdata";
 
 const MAX_ITEMS_PER_SOURCE = 15;
-const DEK_MAX_LEN = 220;
 
 // Web Crypto SHA-1, not Node's `crypto` module — must match the Supabase
 // Edge Function's slugFor exactly (same runtime API, Deno), since both
@@ -15,11 +14,6 @@ async function slugFor(link: string): Promise<string> {
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("")
     .slice(0, 12);
-}
-
-function truncateDek(text: string): string {
-  if (text.length <= DEK_MAX_LEN) return text;
-  return text.slice(0, DEK_MAX_LEN).trimEnd() + "…";
 }
 
 interface SourceResult {
@@ -51,7 +45,7 @@ async function buildRow(
     content_type: contentType,
     language: "ta",
     headline: item.title,
-    dek: truncateDek(item.description || item.title),
+    dek: item.description || item.title,
     body: [], // aggregator model: snippet + link-out, never full republish
     source: sourceLabel,
     source_url: item.link,
