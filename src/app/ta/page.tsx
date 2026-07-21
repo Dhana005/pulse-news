@@ -11,7 +11,6 @@ import CategoryRiver from "@/components/CategoryRiver";
 import VideoNewsSection from "@/components/VideoNewsSection";
 import PhotoGallerySection from "@/components/PhotoGallerySection";
 import EditorsPicksSection from "@/components/EditorsPicksSection";
-import NewsletterSignup from "@/components/NewsletterSignup";
 import Footer from "@/components/Footer";
 import {
   getHeroFeed,
@@ -67,7 +66,8 @@ export default async function HomePage() {
         <VideoNewsSection />
         <PhotoGallerySection />
         <EditorsPicksSection />
-        <NewsletterSignup />
+        {/* NewsletterSignup temporarily hidden — component and /api/newsletter
+        route are still intact, just not rendered on the homepage. */}
       </main>
       <Footer />
     </div>
