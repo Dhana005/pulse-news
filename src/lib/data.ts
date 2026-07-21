@@ -184,6 +184,52 @@ export async function getVideoArticles(count = 4): Promise<Article[]> {
   return rows.map(toArticle);
 }
 
+export interface PhotoGallery {
+  category: string;
+  coverImageUrl: string;
+  count: number;
+}
+
+// No dedicated photo-gallery source exists (unlike video/horoscope, there's
+// no clean site to scrape themed galleries from) — instead this builds real
+// galleries from images already sitting in our own ingested articles,
+// grouped by category. Counts and thumbnails are genuine, not fabricated;
+// clicking through goes to that category's listing since there's no
+// standalone multi-image lightbox route.
+const GALLERY_CATEGORIES = ["cinema", "sports", "tamilnadu", "world"];
+
+export async function getPhotoGalleries(): Promise<PhotoGallery[]> {
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const galleries = await Promise.all(
+    GALLERY_CATEGORIES.map(async (category) => {
+      // Two queries per category rather than one shared limit across all of
+      // them — a single combined limit gets dominated by whichever category
+      // publishes the most, silently undercounting the rest.
+      const [{ count }, { data: coverRows }] = await Promise.all([
+        supabase
+          .from("articles")
+          .select("id", { count: "exact", head: true })
+          .eq("category_key", category)
+          .not("image_url", "is", null)
+          .gt("published_at", since),
+        supabase
+          .from("articles")
+          .select("image_url")
+          .eq("category_key", category)
+          .not("image_url", "is", null)
+          .gt("published_at", since)
+          .order("published_at", { ascending: false })
+          .limit(1),
+      ]);
+      const coverImageUrl = coverRows?.[0]?.image_url as string | undefined;
+      return coverImageUrl && count ? { category, coverImageUrl, count } : null;
+    }),
+  );
+
+  return galleries.filter((g): g is PhotoGallery => g !== null);
+}
+
 export async function getFeaturedArticles(count = 6): Promise<Article[]> {
   const { data, error } = await supabase
     .from("articles")
