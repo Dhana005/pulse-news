@@ -4,8 +4,9 @@ import ThemeToggle from "./ThemeToggle";
 import MobileNav from "./MobileNav";
 import SearchBar from "./SearchBar";
 import MoreMenu from "./MoreMenu";
+import WeatherBadge from "./WeatherBadge";
 import { NAV_ITEMS } from "@/lib/categories";
-import { getChennaiWeather, weatherIcon } from "@/lib/weather";
+import { getChennaiWeather } from "@/lib/weather";
 
 export default async function Header({
   activeKey = "",
@@ -20,12 +21,7 @@ export default async function Header({
         <Logo />
 
         <div className="hidden md:flex items-center gap-4 flex-1 justify-end">
-          {weather && (
-            <span className="flex items-center gap-1.5 text-[13.5px] text-text-muted whitespace-nowrap">
-              <span aria-hidden="true">{weatherIcon(weather.condition)}</span>
-              சென்னை {weather.tempC}°
-            </span>
-          )}
+          <WeatherBadge initial={weather} />
           <span
             className="flex items-center gap-1.5 shrink-0 font-bold text-[11.5px] px-2.5 py-1 rounded"
             style={{ background: "#d32f2f", color: "#fff" }}

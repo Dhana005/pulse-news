@@ -12,24 +12,22 @@ const LINK_COLUMNS = [
       { label: "லைஃப் ஸ்டைல்", href: "/ta/lifestyle" },
     ],
   },
-  {
-    heading: "நிறுவனம்",
-    links: [
-      { label: "எங்களை பற்றி", href: "#" },
-      { label: "எங்கள் குழு", href: "#" },
-      { label: "விளம்பரம் செய்ய", href: "#" },
-      { label: "பணியிடங்கள்", href: "#" },
-      { label: "தொடர்பு கொள்ள", href: "#" },
-    ],
-  },
+  // {
+  //   heading: "நிறுவனம்",
+  //   links: [
+  //     { label: "எங்களை பற்றி", href: "#" },
+  //     { label: "எங்கள் குழு", href: "#" },
+  //     { label: "விளம்பரம் செய்ய", href: "#" },
+  //     { label: "பணியிடங்கள்", href: "#" },
+  //     { label: "தொடர்பு கொள்ள", href: "#" },
+  //   ],
+  // },
   {
     heading: "உதவி",
     links: [
-      { label: "அடிக்கடி கேட்கப்படும் கேள்விகள்", href: "#" },
+      { label: "அடிக்கடி கேட்கப்படும் கேள்விகள்", href: "/ta/faq" },
       { label: "தனியுரிமைக் கொள்கை", href: "/ta/privacy" },
-      { label: "பயன்பாட்டு விதிமுறைகள்", href: "#" },
-      { label: "தள வரைபடம்", href: "#" },
-      { label: "RSS", href: "#" },
+      { label: "பயன்பாட்டு விதிமுறைகள்", href: "/ta/terms" },
     ],
   },
 ];
