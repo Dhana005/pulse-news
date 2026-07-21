@@ -9,6 +9,7 @@ import RelatedList from "@/components/RelatedList";
 import ViewTracker from "@/components/ViewTracker";
 import { getCategoryLabel, isValidCategory } from "@/lib/categories";
 import { getArticle, getRelated } from "@/lib/data";
+import { getYouTubeEmbedUrl } from "@/lib/youtube";
 
 type Params = Promise<{ category: string; slug: string }>;
 
@@ -81,7 +82,15 @@ export default async function ArticlePage({ params }: { params: Params }) {
           </div>
 
           {article.hasVideo ? (
-            article.videoUrl ? (
+            article.videoUrl && getYouTubeEmbedUrl(article.videoUrl) ? (
+              <iframe
+                className="w-full aspect-video rounded-[10px] mb-6"
+                src={getYouTubeEmbedUrl(article.videoUrl)!}
+                title={article.headline}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : article.videoUrl ? (
               // eslint-disable-next-line jsx-a11y/media-has-caption
               <video controls className="w-full rounded-[10px] mb-6 bg-black" src={article.videoUrl} />
             ) : (
@@ -111,7 +120,7 @@ export default async function ArticlePage({ params }: { params: Params }) {
                 className="inline-flex items-center gap-2 self-start px-5 py-3 rounded-lg font-semibold text-[15px]"
                 style={{ background: "var(--accent)", color: "var(--accent-text)" }}
               >
-                {article.source}-இல் முழு செய்தியைப் படிக்க →
+                {article.hasVideo ? `${article.source}-ல் பார்க்க →` : `${article.source}-இல் முழு செய்தியைப் படிக்க →`}
               </a>
             </div>
           ) : (

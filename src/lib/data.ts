@@ -172,6 +172,18 @@ export async function getHeroFeed(): Promise<{ lead: Article; side: Article[] }>
   return { lead, side };
 }
 
+export async function getVideoArticles(count = 4): Promise<Article[]> {
+  const { data, error } = await supabase
+    .from("articles")
+    .select("*")
+    .eq("has_video", true)
+    .order("published_at", { ascending: false })
+    .limit(Math.max(count * 8, 30));
+  if (error) throw error;
+  const rows = diversifyBySource(data ?? [], count, (r) => r.source ?? "");
+  return rows.map(toArticle);
+}
+
 export async function getFeaturedArticles(count = 6): Promise<Article[]> {
   const { data, error } = await supabase
     .from("articles")
