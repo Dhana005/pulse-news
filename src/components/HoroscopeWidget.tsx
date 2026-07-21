@@ -39,9 +39,12 @@ export default function HoroscopeWidget({
         })}
       </div>
       {selected && (
-        <p className="text-[15px] leading-[1.7] text-text-muted m-0 max-w-[70ch]">
-          {selected.rashiName}: {selected.text}
-        </p>
+        <>
+          <p className="text-[15px] leading-[1.7] text-text-muted m-0 max-w-[70ch]">
+            {selected.rashiName}: {selected.text}
+          </p>
+          <p className="text-[12px] text-text-faint m-0 mt-2.5">ஆதாரம்: Oneindia Tamil</p>
+        </>
       )}
     </section>
   );
