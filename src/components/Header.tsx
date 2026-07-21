@@ -59,25 +59,33 @@ export default async function Header({
       </div>
 
       <nav
-        className="hidden md:flex items-center gap-6 px-4 md:px-10 py-2.5 text-[14.5px] font-semibold overflow-x-auto"
-        style={{ background: "var(--accent)" }}
+        className="hidden md:flex items-center gap-6 px-4 md:px-10 py-2.5 text-[14.5px] font-semibold overflow-x-auto scrollbar-hide"
+        style={{ background: "var(--nav-bg)" }}
       >
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.key}
             href={item.key ? `/ta/${item.key}` : "/ta"}
-            className="whitespace-nowrap hover:opacity-80 transition-opacity"
-            style={{
-              color: "var(--accent-text)",
-              opacity: item.key === activeKey ? 1 : 0.82,
-              textDecoration: item.key === activeKey ? "underline" : "none",
-              textUnderlineOffset: "6px",
-            }}
+            className={`nav-item whitespace-nowrap hover:opacity-80 transition-opacity flex items-center gap-1.5 ${
+              item.key === activeKey ? "nav-item-active" : ""
+            }`}
           >
+            {!item.key && (
+              <svg
+                className="nav-home-icon"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M3 11.5 12 4l9 7.5h-3V20h-4v-6h-4v6H6v-8.5H3z" />
+              </svg>
+            )}
             {item.label}
           </Link>
         ))}
-        <MoreMenu color="var(--accent-text)" />
+        <MoreMenu color="var(--nav-text)" />
       </nav>
     </header>
   );

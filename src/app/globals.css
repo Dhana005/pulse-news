@@ -10,18 +10,25 @@
   --accent: #1e4d8c;
   --accent-soft: oklch(93% 0.03 55);
   --accent-text: oklch(99% 0.005 75);
+  --nav-bg: var(--accent);
+  --nav-text: var(--accent-text);
+  --nav-active-text: var(--accent-text);
 }
 
+/* Navy-black dark theme — tuned to match the reference design's palette. */
 [data-theme="dark"] {
-  --bg: oklch(19% 0.015 60);
-  --surface: oklch(23% 0.015 60);
-  --text: oklch(93% 0.01 60);
-  --text-muted: oklch(75% 0.01 60);
-  --text-faint: oklch(60% 0.01 60);
-  --border: oklch(32% 0.01 60);
-  --accent: #1e4d8c;
-  --accent-soft: oklch(30% 0.05 55);
-  --accent-text: oklch(15% 0.01 60);
+  --bg: #050b12;
+  --surface: #0d1219;
+  --text: #f3f5f8;
+  --text-muted: #b7c1cc;
+  --text-faint: #8890a0;
+  --border: #262c36;
+  --accent: #2a63c9;
+  --accent-soft: #142846;
+  --accent-text: #f3f5f8;
+  --nav-bg: var(--bg);
+  --nav-text: var(--text);
+  --nav-active-text: #ffffff;
 }
 
 @theme inline {
@@ -36,6 +43,18 @@
   --color-accent-text: var(--accent-text);
   --font-body: var(--font-hind-madurai);
   --font-brand: var(--font-poppins);
+}
+
+/* The nav bar scrolls horizontally on narrower desktop widths; the native
+   scrollbar track rendered a stray light line under it once the dark theme
+   made the bar's background transparent instead of solid blue. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 @keyframes pn-ticker {
@@ -53,9 +72,48 @@
   border-radius: 8px;
 }
 
+html {
+  background: var(--bg);
+}
+
 body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body), sans-serif;
   transition: background .2s ease, color .2s ease;
+}
+
+/* Header nav — light theme keeps the solid accent bar with an underlined
+   active item; dark theme (matching the reference design) sits on the page
+   background and marks the active item with a pill instead. */
+.nav-item {
+  color: var(--nav-text);
+  opacity: .82;
+  text-decoration: none;
+}
+
+.nav-item-active {
+  color: var(--nav-active-text);
+  opacity: 1;
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
+.nav-home-icon {
+  display: none;
+}
+
+[data-theme="dark"] .nav-item {
+  opacity: 1;
+}
+
+[data-theme="dark"] .nav-item-active {
+  text-decoration: none;
+  background: var(--accent);
+  padding: 6px 14px;
+  border-radius: 9999px;
+}
+
+[data-theme="dark"] .nav-item-active .nav-home-icon {
+  display: inline-flex;
 }
