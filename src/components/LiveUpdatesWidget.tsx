@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getLiveMatch } from "@/lib/cricket";
 import { getChennaiWeather, weatherIcon } from "@/lib/weather";
 import { getTickerItems } from "@/lib/data";
@@ -27,7 +26,7 @@ export default async function LiveUpdatesWidget() {
         </span>
         <h3 className="text-[15px] font-bold m-0">அப்டேட்ஸ்</h3>
       </div>
-      <div className="flex flex-col gap-3.5 mb-4">
+      <div className="flex flex-col gap-3.5">
         {rows.map((row, i) => (
           <div key={i} className="flex items-start gap-2.5">
             <span className="w-1.5 h-1.5 rounded-full mt-2 shrink-0" style={{ background: "#d32f2f" }} aria-hidden="true" />
@@ -38,13 +37,6 @@ export default async function LiveUpdatesWidget() {
           </div>
         ))}
       </div>
-      <Link
-        href="/ta"
-        className="block text-center w-full py-2.5 rounded-lg font-semibold text-[13.5px]"
-        style={{ background: "var(--accent)", color: "var(--accent-text)" }}
-      >
-        அனைத்தையும் பார்க்க
-      </Link>
     </div>
   );
 }

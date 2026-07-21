@@ -4,6 +4,56 @@ import { FEED_SOURCES } from "./sources";
 import { fetchNewsDataItems, NEWSDATA_CATEGORIES } from "./newsdata";
 
 const MAX_ITEMS_PER_SOURCE = 15;
+const OG_IMAGE_CONCURRENCY = 8;
+
+// Some sources (Dinamalar via NewsData.io especially) don't include an image
+// in their feed item at all — but their own article page usually still has
+// an og:image meta tag. Read just enough of the page to find it rather than
+// downloading the whole thing.
+async function fetchOgImage(pageUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(pageUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; PulseNewsBot/1.0)" },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok || !res.body) return null;
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let html = "";
+    let received = 0;
+    const MAX_BYTES = 150_000;
+    while (received < MAX_BYTES) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      html += decoder.decode(value, { stream: true });
+      if (/<\/head>/i.test(html)) break;
+    }
+    reader.cancel().catch(() => {});
+
+    const match =
+      html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ??
+      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i) ??
+      html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function backfillMissingImages(rows: Record<string, any>[]): Promise<void> {
+  const candidates = rows.filter((row) => !row.image_url && row.source_url);
+  let next = 0;
+  async function worker() {
+    while (next < candidates.length) {
+      const row = candidates[next++];
+      row.image_url = await fetchOgImage(row.source_url);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(OG_IMAGE_CONCURRENCY, candidates.length) }, worker));
+}
 
 // Web Crypto SHA-1, not Node's `crypto` module — must match the Supabase
 // Edge Function's slugFor exactly (same runtime API, Deno), since both
@@ -128,6 +178,8 @@ export async function runIngestion(
       }
     }
   }
+
+  await backfillMissingImages(rows);
 
   // A single batch can contain the same (category_key, slug) twice — e.g.
   // NewsData.io sometimes returns the same story more than once in one
