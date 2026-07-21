@@ -7,7 +7,11 @@ import MoreMenu from "./MoreMenu";
 import { NAV_ITEMS } from "@/lib/categories";
 import { getChennaiWeather, weatherIcon } from "@/lib/weather";
 
-export default async function Header({ activeKey = "" }: { activeKey?: string }) {
+export default async function Header({
+  activeKey = "",
+}: {
+  activeKey?: string;
+}) {
   const weather = await getChennaiWeather();
 
   return (
@@ -26,7 +30,10 @@ export default async function Header({ activeKey = "" }: { activeKey?: string })
             className="flex items-center gap-1.5 shrink-0 font-bold text-[11.5px] px-2.5 py-1 rounded"
             style={{ background: "#d32f2f", color: "#fff" }}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" aria-hidden="true" />
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"
+              aria-hidden="true"
+            />
             LIVE
           </span>
           <div className="flex items-center gap-2 border border-border rounded-full px-3.5 py-1.5 w-[220px] shrink-0">
@@ -40,7 +47,11 @@ export default async function Header({ activeKey = "" }: { activeKey?: string })
             href="/ta"
             aria-label="கணக்கு"
             className="hidden sm:flex w-9 h-9 rounded-full items-center justify-center shrink-0"
-            style={{ background: "var(--accent)", color: "var(--accent-text)" }}
+            style={{
+              background: "var(--accent)",
+              color: "var(--accent-text)",
+              display: "none",
+            }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <circle cx="12" cy="8" r="4" />

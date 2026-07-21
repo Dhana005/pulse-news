@@ -184,6 +184,20 @@ export async function getVideoArticles(count = 4): Promise<Article[]> {
   return rows.map(toArticle);
 }
 
+export async function getEditorsPicks(): Promise<{ opinions: Article[]; factCheck: Article | null }> {
+  const [{ data: opinionRows, error: opinionError }, { data: factRows, error: factError }] = await Promise.all([
+    supabase.from("articles").select("*").contains("tags", ["opinion"]).order("published_at", { ascending: false }).limit(3),
+    supabase.from("articles").select("*").contains("tags", ["factcheck"]).order("published_at", { ascending: false }).limit(1),
+  ]);
+  if (opinionError) throw opinionError;
+  if (factError) throw factError;
+
+  return {
+    opinions: (opinionRows ?? []).map(toArticle),
+    factCheck: factRows?.[0] ? toArticle(factRows[0]) : null,
+  };
+}
+
 export interface PhotoGallery {
   category: string;
   coverImageUrl: string;
