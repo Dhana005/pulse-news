@@ -1,30 +1,100 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readFile } from "fs/promises";
+import path from "path";
+import { randomUUID } from "crypto";
 import OpenAI, { toFile } from "openai";
+import { createClient } from "@supabase/supabase-js";
 import { buildPosterBackgroundPrompt } from "@/lib/posterPrompt";
 import { composePoster } from "@/lib/posterCompose";
+import { generateTemplateBackground } from "@/lib/posterBackground";
+import { ensureArticleImageBucket, uploadArticleImage } from "@/lib/ingest/images";
 
 // Internal content-creation tool, not a public reader feature — gated by a
-// shared password (env var) since every generation is a billed OpenAI call.
-//
-// Background generation is AI (gpt-image-1-mini, quality "low", single
-// reference image — no logo, colours are hardcoded in the prompt text
-// instead of extracted from an image; see posterPrompt.ts). This is the
-// cheapest AI-generated-background option — ~$0.004-0.006/poster.
-// Other variants tried and reverted from are still in the repo if this
-// gets revisited:
-// - posterBackground.ts's generateTemplateBackground(): $0, code-only.
-// - quality "medium" + logo+photo (2 images): ~$0.015/poster, the original.
-// - quality "low" + logo+photo (2 images): ~$0.006-0.009/poster.
-// See git history on this file for the exact call shapes.
+// shared password (env var) since three of the four plans below are billed
+// OpenAI calls.
+export type PosterPlan = "free" | "lower" | "low" | "medium";
+
+interface PlanConfig {
+  label: string;
+  approxCostUsd: string;
+  // undefined quality/withLogo means this plan doesn't call OpenAI at all.
+  quality?: "low" | "medium";
+  withLogo?: boolean;
+}
+
+export const POSTER_PLANS: Record<PosterPlan, PlanConfig> = {
+  free: { label: "Free (code-only background, $0)", approxCostUsd: "$0" },
+  lower: { label: "Lower (AI, low quality, no logo ref)", approxCostUsd: "~$0.004-0.006", quality: "low", withLogo: false },
+  low: { label: "Low (AI, low quality, logo+photo ref)", approxCostUsd: "~$0.006-0.009", quality: "low", withLogo: true },
+  medium: { label: "Medium (AI, medium quality, logo+photo ref)", approxCostUsd: "~$0.015", quality: "medium", withLogo: true },
+};
+
+async function generateBackground(plan: PosterPlan, uploadedBuffer: Buffer, apiKey: string | undefined): Promise<Buffer> {
+  const config = POSTER_PLANS[plan];
+
+  if (!config.quality) {
+    // "free" plan — no AI call.
+    return generateTemplateBackground(uploadedBuffer);
+  }
+
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY not configured on the server.");
+  }
+  const client = new OpenAI({ apiKey });
+
+  const uploadedFile = await toFile(uploadedBuffer, "photo.png", { type: "image/png" });
+  const images = [uploadedFile];
+  if (config.withLogo) {
+    const logoPath = path.join(process.cwd(), "public", "logo.png");
+    const logoBuffer = await readFile(logoPath);
+    images.unshift(await toFile(logoBuffer, "logo.png", { type: "image/png" }));
+  }
+
+  const response = await client.images.edit({
+    model: "gpt-image-1-mini",
+    image: images,
+    prompt: buildPosterBackgroundPrompt(Boolean(config.withLogo)),
+    size: "1024x1024",
+    quality: config.quality,
+    output_format: "png",
+  });
+
+  const b64 = response.data?.[0]?.b64_json;
+  if (!b64) throw new Error("OpenAI returned no image data.");
+  return Buffer.from(b64, "base64");
+}
+
+// Uploads the poster to the existing public article-images bucket and
+// returns a link to a dedicated share-preview page carrying it as an
+// og:image/twitter:image — that page (src/app/share/poster/page.tsx) is
+// what Facebook's sharer and X's intent actually scrape. Returns null on any
+// failure (missing env, upload error) so callers can degrade gracefully.
+async function buildShareUrl(posterPng: Buffer, title: string): Promise<string | null> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceKey) return null;
+
+  try {
+    const supabase = createClient(supabaseUrl, serviceKey);
+    await ensureArticleImageBucket(supabase);
+    const publicImageUrl = await uploadArticleImage(supabase, `poster-${randomUUID()}`, {
+      data: posterPng,
+      mimeType: "image/png",
+    });
+    if (!publicImageUrl) return null;
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pulsenewscast.com";
+    const params = new URLSearchParams({ img: publicImageUrl, title });
+    return `${siteUrl}/share/poster?${params.toString()}`;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   const adminPassword = process.env.POSTER_ADMIN_PASSWORD;
   if (!adminPassword) {
     return NextResponse.json({ error: "POSTER_ADMIN_PASSWORD not configured on the server." }, { status: 500 });
-  }
-
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "OPENAI_API_KEY not configured on the server." }, { status: 500 });
   }
 
   const formData = await request.formData();
@@ -34,9 +104,23 @@ export async function POST(request: NextRequest) {
   }
 
   const image = formData.get("image");
-  const headline = formData.get("headline");
-  if (!(image instanceof File) || typeof headline !== "string" || !headline.trim()) {
-    return NextResponse.json({ error: "image and headline are required." }, { status: 400 });
+  if (!(image instanceof File)) {
+    return NextResponse.json({ error: "image is required." }, { status: 400 });
+  }
+
+  const planInput = String(formData.get("plan") || "lower");
+  if (!(planInput in POSTER_PLANS)) {
+    return NextResponse.json({ error: `Invalid plan "${planInput}".` }, { status: 400 });
+  }
+  const plan = planInput as PosterPlan;
+
+  // Headline is only required on the AI plans — the AI background
+  // generation doesn't use it, but the "free" template plan is the only one
+  // where a poster without a headline still makes sense to produce.
+  const headlineInput = formData.get("headline");
+  const headline = typeof headlineInput === "string" ? headlineInput : "";
+  if (plan !== "free" && !headline.trim()) {
+    return NextResponse.json({ error: "headline is required for this plan." }, { status: 400 });
   }
 
   const banner = String(formData.get("banner") || "BREAKING NEWS");
@@ -48,35 +132,26 @@ export async function POST(request: NextRequest) {
   );
 
   try {
-    const client = new OpenAI({ apiKey });
-
     const uploadedBuffer = Buffer.from(await image.arrayBuffer());
-    const uploadedFile = await toFile(uploadedBuffer, image.name || "photo.png", {
-      type: image.type || "image/png",
-    });
 
-    // Step 1: AI generates the background/photo composition only — no text,
-    // no logo, no shapes (see posterPrompt.ts for why).
-    const response = await client.images.edit({
-      model: "gpt-image-1-mini",
-      image: [uploadedFile],
-      prompt: buildPosterBackgroundPrompt(),
-      size: "1024x1024",
-      quality: "low",
-      output_format: "png",
-    });
+    const backgroundPng = await generateBackground(plan, uploadedBuffer, process.env.OPENAI_API_KEY);
 
-    const b64 = response.data?.[0]?.b64_json;
-    if (!b64) {
-      return NextResponse.json({ error: "OpenAI returned no image data." }, { status: 502 });
-    }
-    const backgroundPng = Buffer.from(b64, "base64");
-
-    // Step 2: composite the real logo + all text deterministically on top —
-    // guarantees correct spelling and an accurate brand mark.
+    // Composite the real logo + all text deterministically on top —
+    // guarantees correct spelling and an accurate brand mark, regardless
+    // of which plan generated the background.
     const finalPng = await composePoster(backgroundPng, { banner, headline, description, category, date });
 
-    return NextResponse.json({ image: `data:image/png;base64,${finalPng.toString("base64")}` });
+    // Host the poster publicly so Facebook/X can crawl it as a real og:image
+    // — their sharer/intent dialogs only render a rich image preview for a
+    // scrapeable URL, never for a bare device file. Best-effort: if
+    // Supabase isn't configured, shareUrl comes back null and the client
+    // falls back to link-only sharing.
+    const shareUrl = await buildShareUrl(finalPng, headline || banner);
+
+    return NextResponse.json({
+      image: `data:image/png;base64,${finalPng.toString("base64")}`,
+      shareUrl,
+    });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Poster generation failed." },

@@ -15,12 +15,23 @@ export interface PosterFields {
   date: string;
 }
 
-export function buildPosterBackgroundPrompt(): string {
+// withLogo=true describes a second reference image (the logo) and asks the
+// model to infer the palette from it — used by the "low"/"medium" plans
+// that pass the logo as a reference. withLogo=false hardcodes the palette
+// directly in the text instead, for plans that only send the photo (see
+// route.ts's POSTER_PLANS).
+export function buildPosterBackgroundPrompt(withLogo: boolean): string {
+  const intro = withLogo
+    ? `You are given two reference images: (1) a brand logo — use it ONLY to infer a colour palette (deep blue, navy, an electric-blue accent, white, charcoal black), and (2) a news photograph.
+
+Create a premium, editorial, square (1:1 aspect ratio) background composition in that exact colour palette, for a social-media news poster.`
+    : `You are given one reference image: a news photograph.
+
+Create a premium, editorial, square (1:1 aspect ratio) background composition for a social-media news poster, using this exact brand colour palette: deep blue (#1e4d8c), navy (#0f2440), an electric-blue accent (#3d7ad9), white, and charcoal black. Avoid orange-heavy or unrelated colour schemes.`;
+
   return `You are an award-winning creative director for premium broadcast news graphics.
 
-You are given one reference image: a news photograph.
-
-Create a premium, editorial, square (1:1 aspect ratio) background composition for a social-media news poster, using this exact brand colour palette: deep blue (#1e4d8c), navy (#0f2440), an electric-blue accent (#3d7ad9), white, and charcoal black. Avoid orange-heavy or unrelated colour schemes.
+${intro}
 
 Enhance the provided news photograph — increase sharpness, improve lighting and contrast, balance colour, preserve natural skin tones and facial detail — and blend it into the composition as the dominant hero visual, filling roughly the top 60% of the canvas with a tasteful full-bleed or editorial crop depending on the photo's orientation.
 
