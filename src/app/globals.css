@@ -117,3 +117,35 @@ body {
 [data-theme="dark"] .nav-item-active .nav-home-icon {
   display: inline-flex;
 }
+
+/* Google Translate widget (Footer) — Google's defaults push the whole page
+   down with a top banner iframe and add a garish hover highlight; strip both
+   so it just looks like a small footer link. */
+.goog-te-banner-frame.skiptranslate {
+  display: none !important;
+}
+
+body {
+  top: 0 !important;
+}
+
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+.google-translate-widget .goog-te-gadget {
+  font-family: inherit !important;
+  font-size: 12.5px !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.google-translate-widget .goog-te-gadget .goog-te-combo {
+  margin: 0 !important;
+  font-family: inherit !important;
+  font-size: 12.5px !important;
+}
+
+.google-translate-widget .goog-te-gadget img {
+  display: none !important;
+}

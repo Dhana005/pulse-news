@@ -1,3 +1,5 @@
+import GoogleTranslate from "./GoogleTranslate";
+
 const LINK_COLUMNS = [
   {
     heading: "பிரிவுகள்",
@@ -147,7 +149,7 @@ export default function Footer() {
             © {new Date().getFullYear()} PulseNews. அனைத்து உரிமைகளும்
             பாதுகாக்கப்பட்டவை. · Powered by NexivoTek
           </span>
-          <span>தமிழ் | English (விரைவில்)</span>
+          <GoogleTranslate />
         </div>
       </div>
     </footer>
