@@ -54,7 +54,6 @@ export default function PosterGeneratorPage() {
   const [error, setError] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [resultFile, setResultFile] = useState<File | null>(null);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [canShareFile, setCanShareFile] = useState(false);
   const [shareNote, setShareNote] = useState<string | null>(null);
 
@@ -67,7 +66,6 @@ export default function PosterGeneratorPage() {
     setLoading(true);
     setError(null);
     setResultUrl(null);
-    setShareUrl(null);
 
     try {
       const formData = new FormData();
@@ -83,7 +81,6 @@ export default function PosterGeneratorPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Generation failed.");
       setResultUrl(json.image);
-      setShareUrl(json.shareUrl ?? null);
 
       // Build a real File for the Web Share API (lets WhatsApp/Instagram/X/etc.
       // receive the actual image, not just a caption) — only offer the button
@@ -99,24 +96,28 @@ export default function PosterGeneratorPage() {
     }
   }
 
-  // Facebook's "Create post" dialog and X's tweet composer only render a
-  // rich image preview when the linked URL is a real, crawlable page with
-  // og:image/twitter:image tags — shareUrl (src/share/poster) is exactly
-  // that page. That beats the generic OS share sheet, so Facebook/X always
-  // use it when available. Instagram has no web share URL scheme for any
-  // content, so it stays on native share sheet (mobile) / download (desktop).
+  // The user wants the actual poster image attached to the post, not a
+  // link-preview card — the Web Share API is the only browser mechanism
+  // that can hand a real file to another app, so every icon tries that
+  // first (this is what makes Instagram/Facebook/X show up as share targets
+  // with the image already attached, on mobile or a supporting desktop
+  // browser). No web site can attach a file directly into these platforms'
+  // own composers — that's a platform restriction, not something a browser
+  // API can work around — so when file-sharing isn't available we download
+  // the poster instead and point the user at the platform to attach it
+  // manually.
+  function downloadPoster() {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(resultFile!);
+    a.download = "pulsenews-poster.png";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
+
   async function handleIconShare(platform: "instagram" | "facebook" | "x") {
     setShareNote(null);
-
-    if (platform === "facebook" && shareUrl) {
-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, "_blank", "noopener,noreferrer");
-      return;
-    }
-    if (platform === "x" && shareUrl) {
-      const shareText = encodeURIComponent(headline || "PulseNews");
-      window.open(`https://twitter.com/intent/tweet?text=${shareText}&url=${encodeURIComponent(shareUrl)}`, "_blank", "noopener,noreferrer");
-      return;
-    }
 
     if (canShareFile && resultFile) {
       try {
@@ -127,20 +128,16 @@ export default function PosterGeneratorPage() {
       return;
     }
 
-    const shareText = encodeURIComponent(headline || "PulseNews");
-    if (platform === "x") {
-      window.open(`https://twitter.com/intent/tweet?text=${shareText}`, "_blank", "noopener,noreferrer");
+    downloadPoster();
+    if (platform === "instagram") {
+      window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+      setShareNote("Instagram doesn't accept images from a website at all — the poster has been downloaded, open Instagram and upload it from there.");
     } else if (platform === "facebook") {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.pulsenewscast.com";
-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(siteUrl)}`, "_blank", "noopener,noreferrer");
-      setShareNote("Couldn't host this poster for a rich preview — Facebook will only show the plain PulseNews site link. Attach the downloaded poster to your post manually.");
+      window.open("https://www.facebook.com/", "_blank", "noopener,noreferrer");
+      setShareNote("Facebook's website can't accept an attached file from another site — the poster has been downloaded, click \"Create post\" on Facebook and attach it there.");
     } else {
-      // Instagram has no web share URL at all, for any content.
-      const a = document.createElement("a");
-      a.href = resultUrl!;
-      a.download = "pulsenews-poster.png";
-      a.click();
-      setShareNote("Instagram doesn't support sharing images from a website at all — the poster has been downloaded, open Instagram and upload it from there.");
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(headline || "PulseNews")}`, "_blank", "noopener,noreferrer");
+      setShareNote("X's website can't accept an attached file from another site — the poster has been downloaded, attach it to the tweet that just opened.");
     }
   }
 
@@ -300,9 +297,9 @@ export default function PosterGeneratorPage() {
           </div>
 
           <p className="text-[12.5px] text-text-faint m-0">
-            {shareUrl
-              ? "Facebook and X open their post composer with this poster shown as a link preview. Instagram has no web-share option — it uses your device's share sheet or falls back to download."
-              : "Couldn't host this poster for a link preview — Facebook/X will only get a plain link. See the note below after clicking an icon."}
+            {canShareFile
+              ? "Opens your device's native share sheet with the image attached — pick the app you want from there."
+              : "Your browser can't attach the image directly on desktop — it'll be downloaded instead so you can attach it manually. See the note below after clicking an icon."}
           </p>
           {shareNote && <p className="text-[12.5px] text-accent m-0">{shareNote}</p>}
         </div>

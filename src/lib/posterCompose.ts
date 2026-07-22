@@ -1,21 +1,9 @@
 import sharp from "sharp";
-import { Resvg } from "@resvg/resvg-js";
 import path from "path";
 import type { PosterFields } from "./posterPrompt";
+import { ensurePosterFontconfig } from "./posterFontconfig";
 
-// Text is rasterized via resvg-js with explicit font files (loadSystemFonts:
-// false) rather than sharp's built-in SVG renderer. Sharp's SVG step relies
-// on the OS having fontconfig + real font files to resolve @font-face; that
-// exists on a dev machine but not on Vercel's serverless runtime, where every
-// glyph — Tamil AND plain Latin banner text — silently rendered as tofu
-// boxes in production despite working locally. resvg-js loads our exact font
-// files itself, so it doesn't depend on (or care about) the host's fonts.
 const FONT_FAMILY = "Hind Madurai";
-const FONTS_DIR = path.join(process.cwd(), "src", "lib", "fonts");
-const FONT_FILES = [
-  path.join(FONTS_DIR, "HindMadurai-Bold.ttf"),
-  path.join(FONTS_DIR, "HindMadurai-SemiBold.ttf"),
-];
 
 const CANVAS = 1024;
 
@@ -75,6 +63,8 @@ function fitText(
 }
 
 export async function composePoster(backgroundPng: Buffer, fields: PosterFields): Promise<Buffer> {
+  ensurePosterFontconfig();
+
   const contentWidth = CANVAS - 2 * 48; // 48px side margins
 
   const banner = fields.banner.toUpperCase();
@@ -155,14 +145,9 @@ export async function composePoster(backgroundPng: Buffer, fields: PosterFields)
 
   const background = await sharp(backgroundPng).resize(CANVAS, CANVAS, { fit: "cover" }).toBuffer();
 
-  const overlayResvg = new Resvg(overlaySvg, {
-    font: { fontFiles: FONT_FILES, loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
-  });
-  const overlayPng = overlayResvg.render().asPng();
-
   return sharp(background)
     .composite([
-      { input: overlayPng, top: 0, left: 0 },
+      { input: Buffer.from(overlaySvg), top: 0, left: 0 },
       { input: logoBuffer, top: 24, left: 28 },
     ])
     .png()
