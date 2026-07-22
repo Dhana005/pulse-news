@@ -1,10 +1,12 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { fetchRssItems } from "./parse";
 import { FEED_SOURCES } from "./sources";
 import { fetchNewsDataItems, NEWSDATA_CATEGORIES } from "./newsdata";
+import { ensureArticleImageBucket, generateFallbackImage, uploadArticleImage } from "./images";
 
 const MAX_ITEMS_PER_SOURCE = 15;
 const OG_IMAGE_CONCURRENCY = 8;
+const IMAGE_GEN_CONCURRENCY = 3;
 
 // Some sources (Dinamalar via NewsData.io especially) don't include an image
 // in their feed item at all — but their own article page usually still has
@@ -53,6 +55,31 @@ async function backfillMissingImages(rows: Record<string, any>[]): Promise<void>
     }
   }
   await Promise.all(Array.from({ length: Math.min(OG_IMAGE_CONCURRENCY, candidates.length) }, worker));
+}
+
+// Last resort after the RSS/NewsData image and the og:image scrape above
+// both came up empty — generate a stand-in illustration instead of leaving
+// the article to fall through to the site's generic placeholder graphic.
+// No-op without GEMINI_API_KEY (generateFallbackImage returns null).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function generateMissingImages(rows: Record<string, any>[], supabase: SupabaseClient): Promise<void> {
+  if (!process.env.GEMINI_API_KEY) return;
+
+  const candidates = rows.filter((row) => !row.image_url);
+  if (candidates.length === 0) return;
+
+  await ensureArticleImageBucket(supabase);
+
+  let next = 0;
+  async function worker() {
+    while (next < candidates.length) {
+      const row = candidates[next++];
+      const image = await generateFallbackImage(row.headline, row.category_key);
+      if (!image) continue;
+      row.image_url = await uploadArticleImage(supabase, `${row.category_key}-${row.slug}`, image);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(IMAGE_GEN_CONCURRENCY, candidates.length) }, worker));
 }
 
 // Web Crypto SHA-1, not Node's `crypto` module — must match the Supabase
@@ -192,6 +219,8 @@ export async function runIngestion(
     seen.add(key);
     return true;
   });
+
+  await generateMissingImages(dedupedRows, supabase);
 
   if (dedupedRows.length > 0) {
     const { error } = await supabase.from("articles").upsert(dedupedRows, { onConflict: "category_key,slug" });
