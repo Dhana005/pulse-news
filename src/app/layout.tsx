@@ -29,6 +29,17 @@ gtag('js', new Date());
 gtag('config', '${GA_MEASUREMENT_ID}');
 `;
 
+// Microsoft Clarity. Project ID is not secret, same reasoning as above.
+const CLARITY_PROJECT_ID = "xq8rs4hdlj";
+
+const CLARITY_INIT_SCRIPT = `
+(function(c,l,a,r,i,t,y){
+    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+})(window, document, "clarity", "script", "${CLARITY_PROJECT_ID}");
+`;
+
 const hindMadurai = Hind_Madurai({
   variable: "--font-hind-madurai",
   subsets: ["tamil", "latin"],
@@ -57,6 +68,20 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
+// WebSite structured data (schema.org) for search engines.
+const WEBSITE_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "@id": "https://www.pulsenewscast.com/#website",
+  url: "https://www.pulsenewscast.com/",
+  name: "Pulse News Cast",
+  alternateName: "PulseNewsCast",
+  description: "Latest breaking news, politics, business, technology, sports, entertainment and world news.",
+  publisher: {
+    "@id": "https://www.pulsenewscast.com/",
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -79,6 +104,11 @@ export default function RootLayout({
         />
         <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} />
         <script dangerouslySetInnerHTML={{ __html: GA_INIT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: CLARITY_INIT_SCRIPT }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_SCHEMA) }}
+        />
       </head>
       <body className="min-h-full flex flex-col bg-bg text-text">
         {/* Google Tag Manager (noscript) */}
