@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="602" height="143" viewBox="0 0 602 143">
+  <rect x="0" y="18" width="107" height="107" rx="24" fill="#1e4d8c"/>
+  <polyline points="17,71 41,71 51,36 68,107 82,53 92,71 106,71" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="127" y="103" font-family="Poppins, sans-serif" font-weight="800" font-size="83" letter-spacing="-1.6">
+    <tspan fill="#16233a">Pulse</tspan><tspan fill="#1e4d8c">News</tspan>
+  </text>
+</svg>
