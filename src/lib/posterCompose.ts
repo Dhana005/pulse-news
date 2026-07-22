@@ -1,7 +1,21 @@
 import sharp from "sharp";
-import { readFile } from "fs/promises";
+import { Resvg } from "@resvg/resvg-js";
 import path from "path";
 import type { PosterFields } from "./posterPrompt";
+
+// Text is rasterized via resvg-js with explicit font files (loadSystemFonts:
+// false) rather than sharp's built-in SVG renderer. Sharp's SVG step relies
+// on the OS having fontconfig + real font files to resolve @font-face; that
+// exists on a dev machine but not on Vercel's serverless runtime, where every
+// glyph — Tamil AND plain Latin banner text — silently rendered as tofu
+// boxes in production despite working locally. resvg-js loads our exact font
+// files itself, so it doesn't depend on (or care about) the host's fonts.
+const FONT_FAMILY = "Hind Madurai";
+const FONTS_DIR = path.join(process.cwd(), "src", "lib", "fonts");
+const FONT_FILES = [
+  path.join(FONTS_DIR, "HindMadurai-Bold.ttf"),
+  path.join(FONTS_DIR, "HindMadurai-SemiBold.ttf"),
+];
 
 const CANVAS = 1024;
 
@@ -60,18 +74,7 @@ function fitText(
   return { lines: wrapText(text, Math.max(maxCharsPerLine, 4)).slice(0, maxLines), fontSize: minSize };
 }
 
-async function loadFontsBase64(): Promise<{ bold: string; semiBold: string }> {
-  const fontsDir = path.join(process.cwd(), "src", "lib", "fonts");
-  const [bold, semiBold] = await Promise.all([
-    readFile(path.join(fontsDir, "HindMadurai-Bold.woff2")),
-    readFile(path.join(fontsDir, "HindMadurai-SemiBold.woff2")),
-  ]);
-  return { bold: bold.toString("base64"), semiBold: semiBold.toString("base64") };
-}
-
 export async function composePoster(backgroundPng: Buffer, fields: PosterFields): Promise<Buffer> {
-  const { bold, semiBold } = await loadFontsBase64();
-
   const contentWidth = CANVAS - 2 * 48; // 48px side margins
 
   const banner = fields.banner.toUpperCase();
@@ -118,13 +121,11 @@ export async function composePoster(backgroundPng: Buffer, fields: PosterFields)
   const overlaySvg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS}" height="${CANVAS}">
   <style>
-    @font-face { font-family: 'HMBold'; src: url(data:font/woff2;base64,${bold}) format('woff2'); }
-    @font-face { font-family: 'HMSemiBold'; src: url(data:font/woff2;base64,${semiBold}) format('woff2'); }
-    .banner { font-family: 'HMBold'; font-weight: 700; }
-    .headline { font-family: 'HMBold'; font-weight: 700; }
-    .desc { font-family: 'HMSemiBold'; font-weight: 600; }
-    .badge { font-family: 'HMSemiBold'; font-weight: 600; }
-    .footer { font-family: 'HMSemiBold'; font-weight: 600; }
+    .banner { font-family: '${FONT_FAMILY}'; font-weight: 700; }
+    .headline { font-family: '${FONT_FAMILY}'; font-weight: 700; }
+    .desc { font-family: '${FONT_FAMILY}'; font-weight: 600; }
+    .badge { font-family: '${FONT_FAMILY}'; font-weight: 600; }
+    .footer { font-family: '${FONT_FAMILY}'; font-weight: 600; }
   </style>
 
   <!-- Logo backing pill, top-left — solid enough to stay legible regardless
@@ -154,9 +155,14 @@ export async function composePoster(backgroundPng: Buffer, fields: PosterFields)
 
   const background = await sharp(backgroundPng).resize(CANVAS, CANVAS, { fit: "cover" }).toBuffer();
 
+  const overlayResvg = new Resvg(overlaySvg, {
+    font: { fontFiles: FONT_FILES, loadSystemFonts: false, defaultFontFamily: FONT_FAMILY },
+  });
+  const overlayPng = overlayResvg.render().asPng();
+
   return sharp(background)
     .composite([
-      { input: Buffer.from(overlaySvg), top: 0, left: 0 },
+      { input: overlayPng, top: 0, left: 0 },
       { input: logoBuffer, top: 24, left: 28 },
     ])
     .png()

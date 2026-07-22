@@ -49,7 +49,7 @@ export default function PosterGeneratorPage() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [banner, setBanner] = useState(BANNER_PRESETS[0]);
-  const [plan, setPlan] = useState<(typeof PLANS)[number]["value"]>("lower");
+  const [plan, setPlan] = useState<(typeof PLANS)[number]["value"]>("free");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
