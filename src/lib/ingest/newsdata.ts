@@ -8,6 +8,8 @@
 // 4 requests per ingestion run, so the cron interval (see
 // supabase/migrations/0004_hourly_cron.sql) is hourly, not every 30 min.
 
+import { stripHtml } from "./parse";
+
 export interface NewsDataItem {
   title: string;
   link: string;
@@ -54,9 +56,9 @@ export async function fetchNewsDataItems(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (json.results ?? []).map((r: any) => ({
-    title: r.title ?? "",
+    title: stripHtml(r.title ?? ""),
     link: r.link ?? "",
-    description: r.description ?? "",
+    description: stripHtml(r.description ?? ""),
     pubDate: r.pubDate ?? undefined,
     imageUrl: r.image_url ?? undefined,
     sourceName: r.source_name ?? "NewsData",

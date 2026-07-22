@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import PlaceholderMedia from "./PlaceholderMedia";
 
 export default function ArticleMedia({
@@ -14,7 +17,11 @@ export default function ArticleMedia({
   // gap at the corners instead of following the ancestor's curve.
   rounded?: boolean;
 }) {
-  if (!imageUrl) {
+  // Publisher image URLs sometimes 404 or block hotlinking after ingestion —
+  // fall back to the placeholder graphic instead of a broken-image icon.
+  const [failed, setFailed] = useState(false);
+
+  if (!imageUrl || failed) {
     return <PlaceholderMedia className={className} style={rounded ? undefined : { borderRadius: 0 }} />;
   }
   return (
@@ -27,7 +34,13 @@ export default function ArticleMedia({
     <div className={`overflow-hidden ${rounded ? "rounded-lg" : ""} ${className}`}>
       {/* eslint-disable-next-line @next/next/no-img-element -- images come from
       many different publisher hosts; not worth a remotePatterns allowlist for v1. */}
-      <img src={imageUrl} alt={alt} loading="lazy" className="block object-cover w-full h-full" />
+      <img
+        src={imageUrl}
+        alt={alt}
+        loading="lazy"
+        className="block object-cover w-full h-full"
+        onError={() => setFailed(true)}
+      />
     </div>
   );
 }

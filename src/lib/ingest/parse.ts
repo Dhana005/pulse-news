@@ -24,7 +24,7 @@ function textOf(value: unknown): string {
   return "";
 }
 
-function stripHtml(input: string): string {
+export function stripHtml(input: string): string {
   return input
     .replace(/<[^>]*>/g, " ")
     .replace(/&nbsp;/g, " ")
