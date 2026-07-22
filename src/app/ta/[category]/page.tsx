@@ -8,6 +8,7 @@ import HoroscopeTeaser from "@/components/HoroscopeTeaser";
 import TrendingList from "@/components/TrendingList";
 import { CATEGORIES, getCategoryLabel, isValidCategory } from "@/lib/categories";
 import { getTrending, getCategoryArticles } from "@/lib/data";
+import { CATEGORY_SEO } from "@/lib/seo";
 
 const PAGE_SIZE = 6;
 
@@ -21,7 +22,9 @@ type Params = Promise<{ category: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { category } = await params;
-  return { title: `${getCategoryLabel(category)} — PulseNews` };
+  const seo = CATEGORY_SEO[category];
+  if (!seo) return { title: `${getCategoryLabel(category)} — PulseNews` };
+  return { title: seo.title, description: seo.description, keywords: seo.keywords };
 }
 
 export default async function CategoryPage({ params }: { params: Params }) {
@@ -44,7 +47,9 @@ export default async function CategoryPage({ params }: { params: Params }) {
             </Link>{" "}
             / {label}
           </div>
-          <h1 className="text-[26px] md:text-[34px] font-bold m-0 mb-5 md:mb-6">{label}</h1>
+          <h1 className="text-[26px] md:text-[34px] font-bold m-0 mb-5 md:mb-6">
+            {CATEGORY_SEO[category]?.h1 ?? label}
+          </h1>
           <ArticleList
             category={category}
             initialArticles={initialArticles}

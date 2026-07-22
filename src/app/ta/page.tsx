@@ -20,9 +20,12 @@ import {
   getHoroscopeReadings,
   todayLabel,
 } from "@/lib/data";
+import { HOME_SEO } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "PulseNews — முகப்பு",
+  title: HOME_SEO.title,
+  description: HOME_SEO.description,
+  keywords: HOME_SEO.keywords,
 };
 
 // Featured river row on the homepage, matching the reference layout.
@@ -45,6 +48,7 @@ export default async function HomePage() {
       <Header activeKey="" />
       <BreakingTicker />
       <main className="max-w-[1240px] w-full mx-auto px-4 md:px-10 pt-7 md:pt-9 pb-12 md:pb-16 flex-1">
+        <h1 className="sr-only">{HOME_SEO.h1}</h1>
         <HeroSection lead={lead} side={side} />
         <TrendingTopics />
 

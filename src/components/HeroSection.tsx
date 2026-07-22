@@ -30,9 +30,11 @@ export default function HeroSection({ lead, side }: { lead: Article; side: Artic
           className="absolute inset-x-0 bottom-0 px-5 md:px-6 pt-14 pb-5 flex flex-col gap-2.5"
           style={{ background: "linear-gradient(to top, rgba(0,0,0,0.88), rgba(0,0,0,0.55) 60%, transparent)" }}
         >
-          <h1 className="text-[22px] sm:text-[26px] md:text-[30px] leading-[1.3] font-bold m-0 -tracking-[0.01em] text-white">
+          {/* h2, not h1 — the homepage's h1 is the page-level heading in
+          page.tsx; this is one story's headline, not the page's topic. */}
+          <h2 className="text-[22px] sm:text-[26px] md:text-[30px] leading-[1.3] font-bold m-0 -tracking-[0.01em] text-white">
             {lead.headline}
-          </h1>
+          </h2>
           {lead.dek && (
             <p className="hidden sm:block text-[14px] md:text-[15px] leading-[1.6] m-0 max-w-[60ch]" style={{ color: "rgba(255,255,255,0.75)" }}>
               {lead.dek}
