@@ -11,6 +11,17 @@ const ADSENSE_CLIENT_ID = "ca-pub-5364676429059788";
 // page's HTML by design), same reasoning as ADSENSE_CLIENT_ID above.
 const GA_MEASUREMENT_ID = "G-WVBZT5S2S3";
 
+// Google Tag Manager. Container ID is not secret, same reasoning as above.
+const GTM_ID = "GTM-MKXKS66S";
+
+const GTM_INIT_SCRIPT = `
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${GTM_ID}');
+`;
+
 const GA_INIT_SCRIPT = `
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
@@ -54,6 +65,8 @@ export default function RootLayout({
   return (
     <html lang="ta" className={`${hindMadurai.variable} ${poppins.variable} h-full antialiased`}>
       <head>
+        {/* Google Tag Manager — kept as high in <head> as possible, per Google's setup instructions. */}
+        <script dangerouslySetInnerHTML={{ __html: GTM_INIT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <meta name="google-adsense-account" content={ADSENSE_CLIENT_ID} />
         {/* Plain <script>, not next/script's <Script> — Next's component
@@ -67,7 +80,18 @@ export default function RootLayout({
         <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} />
         <script dangerouslySetInnerHTML={{ __html: GA_INIT_SCRIPT }} />
       </head>
-      <body className="min-h-full flex flex-col bg-bg text-text">{children}</body>
+      <body className="min-h-full flex flex-col bg-bg text-text">
+        {/* Google Tag Manager (noscript) */}
+        <noscript>
+          <iframe
+            src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+          />
+        </noscript>
+        {children}
+      </body>
     </html>
   );
 }
