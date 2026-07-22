@@ -35,10 +35,7 @@ export async function generateFallbackImage(
         headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: buildImagePrompt(headline, category) }] }],
-          generationConfig: {
-            responseModalities: ["IMAGE"],
-            responseFormat: { image: { aspectRatio: "16:9", imageSize: "1K" } },
-          },
+          generationConfig: { responseModalities: ["IMAGE"] },
         }),
         signal: AbortSignal.timeout(30000),
       },
