@@ -24,7 +24,12 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { category } = await params;
   const seo = CATEGORY_SEO[category];
   if (!seo) return { title: `${getCategoryLabel(category)} — PulseNews` };
-  return { title: seo.title, description: seo.description, keywords: seo.keywords };
+  return {
+    title: seo.title,
+    description: seo.description,
+    keywords: seo.keywords,
+    openGraph: { title: seo.ogTitle, description: seo.ogDescription },
+  };
 }
 
 export default async function CategoryPage({ params }: { params: Params }) {
