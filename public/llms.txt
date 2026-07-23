@@ -1,0 +1,49 @@
+# Pulse News Cast
+
+Website: https://www.pulsenewscast.com
+
+Description:
+Pulse News Cast is an online news platform delivering breaking news, latest updates, and in-depth coverage from India and around the world.
+
+Categories:
+- Breaking News
+- India
+- World
+- Politics
+- Business
+- Technology
+- Sports
+- Entertainment
+- Health
+- Science
+- Lifestyle
+- Education
+- Automobile
+
+Content Types:
+- News Articles
+- Breaking News
+- Live Updates
+- Explainers
+- Editorials
+- Opinion
+- Analysis
+
+Editorial Standards:
+- Accurate reporting
+- Fact-based journalism
+- Neutral coverage
+- Regular updates
+
+Publishing:
+News is published throughout the day as events happen.
+
+Website:
+https://www.pulsenewscast.com
+
+Sitemap:
+https://www.pulsenewscast.com/sitemap.xml
+
+Robots:
+AI systems may summarize publicly available content with proper attribution and a link back to the original article.
+Original articles should not be reproduced in full.
