@@ -8,6 +8,7 @@ import { buildPosterBackgroundPrompt } from "@/lib/posterPrompt";
 import { composePoster } from "@/lib/posterCompose";
 import { generateTemplateBackground } from "@/lib/posterBackground";
 import { ensureArticleImageBucket, uploadArticleImage } from "@/lib/ingest/images";
+import { getPosterTheme, type PosterTheme } from "@/lib/posterThemes";
 
 // Internal content-creation tool, not a public reader feature — gated by a
 // shared password (env var) since three of the four plans below are billed
@@ -29,12 +30,18 @@ export const POSTER_PLANS: Record<PosterPlan, PlanConfig> = {
   medium: { label: "Medium (AI, medium quality, logo+photo ref)", approxCostUsd: "~$0.015", quality: "medium", withLogo: true },
 };
 
-async function generateBackground(plan: PosterPlan, uploadedBuffer: Buffer, apiKey: string | undefined): Promise<Buffer> {
+async function generateBackground(
+  plan: PosterPlan,
+  uploadedBuffer: Buffer,
+  apiKey: string | undefined,
+  theme: PosterTheme,
+  customLogoBuffer: Buffer | undefined,
+): Promise<Buffer> {
   const config = POSTER_PLANS[plan];
 
   if (!config.quality) {
     // "free" plan — no AI call.
-    return generateTemplateBackground(uploadedBuffer);
+    return generateTemplateBackground(uploadedBuffer, theme);
   }
 
   if (!apiKey) {
@@ -45,15 +52,14 @@ async function generateBackground(plan: PosterPlan, uploadedBuffer: Buffer, apiK
   const uploadedFile = await toFile(uploadedBuffer, "photo.png", { type: "image/png" });
   const images = [uploadedFile];
   if (config.withLogo) {
-    const logoPath = path.join(process.cwd(), "public", "logo.png");
-    const logoBuffer = await readFile(logoPath);
+    const logoBuffer = customLogoBuffer ?? (await readFile(path.join(process.cwd(), "public", "logo.png")));
     images.unshift(await toFile(logoBuffer, "logo.png", { type: "image/png" }));
   }
 
   const response = await client.images.edit({
     model: "gpt-image-1-mini",
     image: images,
-    prompt: buildPosterBackgroundPrompt(Boolean(config.withLogo)),
+    prompt: buildPosterBackgroundPrompt(Boolean(config.withLogo), theme),
     size: "1024x1024",
     quality: config.quality,
     output_format: "png",
@@ -130,16 +136,20 @@ export async function POST(request: NextRequest) {
     formData.get("date") ||
       new Date().toLocaleDateString("ta-IN", { day: "numeric", month: "long", year: "numeric" }),
   );
+  const theme = getPosterTheme(formData.get("theme") as string | null);
+
+  const logoFile = formData.get("logo");
+  const customLogoBuffer = logoFile instanceof File ? Buffer.from(await logoFile.arrayBuffer()) : undefined;
 
   try {
     const uploadedBuffer = Buffer.from(await image.arrayBuffer());
 
-    const backgroundPng = await generateBackground(plan, uploadedBuffer, process.env.OPENAI_API_KEY);
+    const backgroundPng = await generateBackground(plan, uploadedBuffer, process.env.OPENAI_API_KEY, theme, customLogoBuffer);
 
     // Composite the real logo + all text deterministically on top —
     // guarantees correct spelling and an accurate brand mark, regardless
     // of which plan generated the background.
-    const finalPng = await composePoster(backgroundPng, { banner, headline, description, category, date });
+    const finalPng = await composePoster(backgroundPng, { banner, headline, description, category, date }, theme, customLogoBuffer);
 
     // Host the poster publicly so Facebook/X can crawl it as a real og:image
     // — their sharer/intent dialogs only render a rich image preview for a

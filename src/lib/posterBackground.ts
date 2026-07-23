@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import type { PosterTheme } from "./posterThemes";
 
 // Code-only replacement for the OpenAI background-generation step (see
 // posterPrompt.ts / route.ts for the AI version, kept in place in case this
@@ -38,37 +39,37 @@ async function fadePhotoBottom(photoBuffer: Buffer): Promise<Buffer> {
   return sharp(photoBuffer).composite([{ input: mask, blend: "dest-in" }]).png().toBuffer();
 }
 
-function baseGradientSvg(): string {
+function baseGradientSvg(theme: PosterTheme): string {
   return `
 <svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS}" height="${CANVAS}">
   <defs>
     <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1e4d8c"/>
-      <stop offset="45%" stop-color="#0f2440"/>
+      <stop offset="0%" stop-color="${theme.primary}"/>
+      <stop offset="45%" stop-color="${theme.secondary}"/>
       <stop offset="100%" stop-color="#050b12"/>
     </linearGradient>
     <radialGradient id="glow1" cx="80%" cy="12%" r="45%">
-      <stop offset="0%" stop-color="#3d7ad9" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="#3d7ad9" stop-opacity="0"/>
+      <stop offset="0%" stop-color="${theme.accent}" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="${theme.accent}" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="glow2" cx="8%" cy="92%" r="40%">
-      <stop offset="0%" stop-color="#1e4d8c" stop-opacity="0.4"/>
-      <stop offset="100%" stop-color="#1e4d8c" stop-opacity="0"/>
+      <stop offset="0%" stop-color="${theme.primary}" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="${theme.primary}" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="${CANVAS}" height="${CANVAS}" fill="url(#base)"/>
   <rect width="${CANVAS}" height="${CANVAS}" fill="url(#glow1)"/>
   <rect width="${CANVAS}" height="${CANVAS}" fill="url(#glow2)"/>
   <!-- subtle geometric accent lines -->
-  <line x1="0" y1="${PHOTO_HEIGHT + 40}" x2="${CANVAS}" y2="${PHOTO_HEIGHT + 10}" stroke="#3d7ad9" stroke-width="1.5" opacity="0.25"/>
-  <circle cx="${CANVAS - 60}" cy="${CANVAS - 140}" r="120" fill="none" stroke="#3d7ad9" stroke-width="1" opacity="0.15"/>
+  <line x1="0" y1="${PHOTO_HEIGHT + 40}" x2="${CANVAS}" y2="${PHOTO_HEIGHT + 10}" stroke="${theme.accent}" stroke-width="1.5" opacity="0.25"/>
+  <circle cx="${CANVAS - 60}" cy="${CANVAS - 140}" r="120" fill="none" stroke="${theme.accent}" stroke-width="1" opacity="0.15"/>
 </svg>`;
 }
 
-export async function generateTemplateBackground(photoBuffer: Buffer): Promise<Buffer> {
+export async function generateTemplateBackground(photoBuffer: Buffer, theme: PosterTheme): Promise<Buffer> {
   const enhanced = await enhancePhoto(photoBuffer);
   const faded = await fadePhotoBottom(enhanced);
-  const base = await sharp(Buffer.from(baseGradientSvg())).png().toBuffer();
+  const base = await sharp(Buffer.from(baseGradientSvg(theme))).png().toBuffer();
 
   return sharp(base)
     .composite([{ input: faded, top: 0, left: 0 }])

@@ -2,6 +2,7 @@ import sharp from "sharp";
 import path from "path";
 import type { PosterFields } from "./posterPrompt";
 import { ensurePosterFontconfig } from "./posterFontconfig";
+import type { PosterTheme } from "./posterThemes";
 
 const FONT_FAMILY = "Hind Madurai";
 
@@ -62,14 +63,19 @@ function fitText(
   return { lines: wrapText(text, Math.max(maxCharsPerLine, 4)).slice(0, maxLines), fontSize: minSize };
 }
 
-export async function composePoster(backgroundPng: Buffer, fields: PosterFields): Promise<Buffer> {
+export async function composePoster(
+  backgroundPng: Buffer,
+  fields: PosterFields,
+  theme: PosterTheme,
+  customLogoBuffer?: Buffer,
+): Promise<Buffer> {
   ensurePosterFontconfig();
 
   const contentWidth = CANVAS - 2 * 48; // 48px side margins
 
   const banner = fields.banner.toUpperCase();
   const isBreaking = /BREAKING|LIVE|URGENT/.test(banner);
-  const bannerColor = isBreaking ? "#d32f2f" : "#1e4d8c";
+  const bannerColor = isBreaking ? "#d32f2f" : theme.primary;
   const bannerCharWidth = 24 * 0.6;
   const bannerWidth = Math.min(contentWidth, Math.max(220, banner.length * bannerCharWidth + 56));
 
@@ -101,8 +107,11 @@ export async function composePoster(backgroundPng: Buffer, fields: PosterFields)
   const badgeText = [fields.category, fields.date].filter(Boolean).join("  ·  ");
   const badgeWidth = Math.max(140, badgeText.length * 9 + 40);
 
-  const logoPath = path.join(process.cwd(), "public", "logo-white.png");
-  const logoBuffer = await sharp(logoPath).resize({ height: 40 }).toBuffer();
+  // Custom uploaded logo takes over compositing entirely when provided —
+  // otherwise fall back to the built-in white PulseNews mark, which is
+  // designed to sit on the dark backing pill below.
+  const logoSource = customLogoBuffer ?? path.join(process.cwd(), "public", "logo-white.png");
+  const logoBuffer = await sharp(logoSource).resize({ height: 40 }).toBuffer();
   const logoMeta = await sharp(logoBuffer).metadata();
   const logoWidth = logoMeta.width ?? 130;
   const logoPillWidth = logoWidth + 32;
@@ -139,7 +148,7 @@ export async function composePoster(backgroundPng: Buffer, fields: PosterFields)
   ${hasDescription ? `<text class="desc" font-size="${description.fontSize}" fill="rgba(255,255,255,0.82)">${descTspans}</text>` : ""}
 
   <!-- Footer bar -->
-  <rect x="0" y="${CANVAS - footerHeight}" width="${CANVAS}" height="${footerHeight}" fill="#0f2440"/>
+  <rect x="0" y="${CANVAS - footerHeight}" width="${CANVAS}" height="${footerHeight}" fill="${theme.secondary}"/>
   <text class="footer" x="${CANVAS - 32}" y="${CANVAS - footerHeight / 2 + 6}" font-size="18" fill="#ffffff" text-anchor="end">www.pulsenewscast.com</text>
 </svg>`;
 

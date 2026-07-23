@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { POSTER_THEMES, DEFAULT_POSTER_THEME } from "@/lib/posterThemes";
 
 const BANNER_PRESETS = [
   "BREAKING NEWS",
@@ -50,6 +51,8 @@ export default function PosterGeneratorPage() {
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [banner, setBanner] = useState(BANNER_PRESETS[0]);
   const [plan, setPlan] = useState<(typeof PLANS)[number]["value"]>("free");
+  const [theme, setTheme] = useState(DEFAULT_POSTER_THEME);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
@@ -76,6 +79,8 @@ export default function PosterGeneratorPage() {
       formData.append("category", category);
       formData.append("banner", banner);
       formData.append("plan", plan);
+      formData.append("theme", theme);
+      if (logoFile) formData.append("logo", logoFile);
 
       const res = await fetch("/api/generate-poster", { method: "POST", body: formData });
       const json = await res.json();
@@ -218,6 +223,38 @@ export default function PosterGeneratorPage() {
               </option>
             ))}
           </select>
+        </label>
+
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[13px] font-semibold">Theme</span>
+          <div className="flex flex-wrap gap-2">
+            {Object.values(POSTER_THEMES).map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTheme(t.key)}
+                title={t.label}
+                aria-label={t.label}
+                aria-pressed={theme === t.key}
+                className="w-9 h-9 rounded-full shrink-0"
+                style={{
+                  background: `linear-gradient(135deg, ${t.primary}, ${t.secondary})`,
+                  outline: theme === t.key ? "2.5px solid var(--accent)" : "1px solid var(--border)",
+                  outlineOffset: 2,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[13px] font-semibold">Custom logo (optional — replaces the PulseNews mark)</span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+            className="text-[14px]"
+          />
         </label>
 
         <div className="flex gap-4">
