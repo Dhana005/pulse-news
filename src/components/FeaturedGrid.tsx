@@ -18,9 +18,9 @@ export default function FeaturedGrid({ articles }: { articles: Article[] }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
         {[large1, large2].filter(Boolean).map((art) => (
-          <Link key={art.slug} href={`/ta/${art.category}/${art.slug}`} className="flex flex-col gap-2.5">
+          <Link key={art.slug} href={`/ta/${art.category}/${art.slug}`} className="flex flex-col gap-2.5 min-w-0">
             <div className="relative">
-              <ArticleMedia imageUrl={art.imageUrl} alt={art.headline} className="h-[190px] md:h-[210px]" />
+              <ArticleMedia imageUrl={art.imageUrl} alt={art.headline} className="h-[190px] md:h-[210px] w-full" />
               <span
                 className="absolute top-2.5 left-2.5 text-[11.5px] font-bold px-2.5 py-1 rounded"
                 style={{ background: "var(--accent)", color: "var(--accent-text)" }}
@@ -36,8 +36,8 @@ export default function FeaturedGrid({ articles }: { articles: Article[] }) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         {small.map((art) => (
-          <Link key={art.slug} href={`/ta/${art.category}/${art.slug}`} className="flex flex-col gap-2">
-            <ArticleMedia imageUrl={art.imageUrl} alt={art.headline} className="h-[100px] md:h-[120px]" />
+          <Link key={art.slug} href={`/ta/${art.category}/${art.slug}`} className="flex flex-col gap-2 min-w-0">
+            <ArticleMedia imageUrl={art.imageUrl} alt={art.headline} className="h-[100px] md:h-[120px] w-full" />
             <span className="text-[13.5px] md:text-[14.5px] font-semibold leading-[1.4]">{art.headline}</span>
             <span className="text-[12px] text-text-faint">{art.publishedAgo}</span>
           </Link>

@@ -30,7 +30,7 @@ export default async function EditorsPicksSection() {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {opinions.map((pick) => (
-          <Link key={pick.slug} href={`/ta/${pick.category}/${pick.slug}`} className="flex flex-col gap-2.5">
+          <Link key={pick.slug} href={`/ta/${pick.category}/${pick.slug}`} className="flex flex-col gap-2.5 min-w-0">
             <div className="flex items-center gap-2.5">
               <OpinionBadge />
               <div className="flex flex-col gap-0.5 min-w-0">
@@ -42,7 +42,7 @@ export default async function EditorsPicksSection() {
           </Link>
         ))}
         {factCheck && (
-          <Link href={`/ta/${factCheck.category}/${factCheck.slug}`} className="flex flex-col gap-2.5">
+          <Link href={`/ta/${factCheck.category}/${factCheck.slug}`} className="flex flex-col gap-2.5 min-w-0">
             <div className="flex items-center gap-2.5">
               <span
                 className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center font-bold text-[10px] text-center leading-tight"

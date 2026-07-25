@@ -34,7 +34,7 @@ export default async function VideoNewsSection() {
         <h2 className="text-[20px] md:text-[22px] font-bold m-0">வீடியோ செய்திகள்</h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-[1.3fr_1fr] gap-5 md:gap-7">
-        <Link href={`/ta/${featured.category}/${featured.slug}`} className="flex flex-col gap-2.5">
+        <Link href={`/ta/${featured.category}/${featured.slug}`} className="flex flex-col gap-2.5 min-w-0">
           <div className="relative">
             <ArticleMedia imageUrl={featured.imageUrl} alt={featured.headline} className="h-[200px] md:h-[260px] w-full" />
             <PlayBadge />
@@ -44,7 +44,7 @@ export default async function VideoNewsSection() {
         </Link>
         <div className="flex flex-col gap-3.5">
           {rest.map((v) => (
-            <Link key={v.slug} href={`/ta/${v.category}/${v.slug}`} className="flex gap-3 items-start">
+            <Link key={v.slug} href={`/ta/${v.category}/${v.slug}`} className="flex gap-3 items-start min-w-0">
               <div className="relative shrink-0 w-[92px] h-[64px]">
                 <ArticleMedia imageUrl={v.imageUrl} alt={v.headline} className="w-full h-full" />
                 <PlayBadge size="sm" />

@@ -14,7 +14,7 @@ export default async function PhotoGallerySection() {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         {galleries.map((g) => (
-          <Link key={g.category} href={`/ta/${g.category}`} className="flex flex-col gap-2">
+          <Link key={g.category} href={`/ta/${g.category}`} className="flex flex-col gap-2 min-w-0">
             <div className="relative">
               <ArticleMedia imageUrl={g.coverImageUrl} alt={getCategoryLabel(g.category)} className="h-[110px] md:h-[130px] w-full" />
               <span

@@ -10,7 +10,7 @@ export default function CategoryRiver({ category, articles }: { category: string
   return (
     <div className="flex flex-col gap-3.5 min-w-0">
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-[16px] font-bold m-0">{getCategoryLabel(category)}</h2>
+        <h2 className="text-[16px] font-bold m-0 min-w-0 truncate">{getCategoryLabel(category)}</h2>
         <Link href={`/ta/${category}`} className="text-[12px] font-semibold text-accent whitespace-nowrap">
           அனைத்தையும் பார்க்க →
         </Link>
