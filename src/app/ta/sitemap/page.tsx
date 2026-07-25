@@ -14,6 +14,13 @@ const SECTIONS = [
     links: CATEGORIES.map((c) => ({ label: c.label, href: `/ta/${c.key}` })),
   },
   {
+    heading: "நிறுவனம்",
+    links: [
+      { label: "எங்களை பற்றி", href: "/ta/about" },
+      { label: "தொடர்பு கொள்ள", href: "/ta/contact" },
+    ],
+  },
+  {
     heading: "உதவி",
     links: [
       { label: "அடிக்கடி கேட்கப்படும் கேள்விகள்", href: "/ta/faq" },
