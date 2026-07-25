@@ -8,6 +8,7 @@ export default function ArticleMedia({
   alt,
   className = "",
   rounded = true,
+  priority = false,
 }: {
   imageUrl?: string;
   alt: string;
@@ -16,6 +17,11 @@ export default function ArticleMedia({
   // card with overflow-hidden) — an inner radius there would leave a visible
   // gap at the corners instead of following the ancestor's curve.
   rounded?: boolean;
+  // For the single above-the-fold image that's the page's LCP element (the
+  // homepage hero's lead image) — loads eagerly at high priority instead of
+  // lazily. Every other call site should leave this off; lazy-loading is
+  // correct for images below the fold.
+  priority?: boolean;
 }) {
   // Publisher image URLs sometimes 404 or block hotlinking after ingestion —
   // fall back to the placeholder graphic instead of a broken-image icon.
@@ -37,7 +43,8 @@ export default function ArticleMedia({
       <img
         src={imageUrl}
         alt={alt}
-        loading="lazy"
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
         className="block object-cover w-full h-full"
         onError={() => setFailed(true)}
       />

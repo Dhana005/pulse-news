@@ -8,7 +8,7 @@ export default function HeroSection({ lead, side }: { lead: Article; side: Artic
   return (
     <section className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden flex flex-col lg:flex-row mb-10 md:mb-13">
       <Link href={`/ta/${lead.category}/${lead.slug}`} className="relative block h-[300px] lg:h-[460px] lg:flex-[1.6] lg:min-w-0">
-        <ArticleMedia imageUrl={lead.imageUrl} alt={lead.headline} className="h-full w-full" rounded={false} />
+        <ArticleMedia imageUrl={lead.imageUrl} alt={lead.headline} className="h-full w-full" rounded={false} priority />
 
         <span
           className="absolute top-4 left-4 text-[12.5px] font-bold px-3.5 py-1.5 rounded-full"

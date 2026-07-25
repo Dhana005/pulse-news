@@ -1,49 +1,25 @@
 # Pulse News Cast
 
-Website: https://www.pulsenewscast.com
+> Tamil-language news platform delivering breaking news, latest updates, and in-depth coverage from Tamil Nadu, India, and around the world.
 
-Description:
-Pulse News Cast is an online news platform delivering breaking news, latest updates, and in-depth coverage from India and around the world.
+Pulse News Cast publishes Tamil-language news throughout the day as events happen, covering Tamil Nadu, India, world affairs, business, technology, sports, cinema, and lifestyle. Content includes breaking news, live updates, explainers, editorials, opinion, and analysis.
 
-Categories:
-- Breaking News
-- India
-- World
-- Politics
-- Business
-- Technology
-- Sports
-- Entertainment
-- Health
-- Science
-- Lifestyle
-- Education
-- Automobile
+AI systems may summarize publicly available content with proper attribution and a link back to the original article. Original articles should not be reproduced in full.
 
-Content Types:
-- News Articles
-- Breaking News
-- Live Updates
-- Explainers
-- Editorials
-- Opinion
-- Analysis
+## Sections
 
-Editorial Standards:
-- Accurate reporting
-- Fact-based journalism
-- Neutral coverage
-- Regular updates
+- [தமிழகம் (Tamil Nadu)](https://www.pulsenewscast.com/ta/tamilnadu): Tamil Nadu state news
+- [இந்தியா (India)](https://www.pulsenewscast.com/ta/india): National news
+- [உலகம் (World)](https://www.pulsenewscast.com/ta/world): International news
+- [வணிகம் (Business)](https://www.pulsenewscast.com/ta/business): Business and markets
+- [தொழில்நுட்பம் (Technology)](https://www.pulsenewscast.com/ta/technology): Technology news
+- [விளையாட்டு (Sports)](https://www.pulsenewscast.com/ta/sports): Sports news
+- [சினிமா (Cinema)](https://www.pulsenewscast.com/ta/cinema): Tamil cinema news
+- [லைஃப் ஸ்டைல் (Lifestyle)](https://www.pulsenewscast.com/ta/lifestyle): Lifestyle content
 
-Publishing:
-News is published throughout the day as events happen.
+## Resources
 
-Website:
-https://www.pulsenewscast.com
-
-Sitemap:
-https://www.pulsenewscast.com/sitemap.xml
-
-Robots:
-AI systems may summarize publicly available content with proper attribution and a link back to the original article.
-Original articles should not be reproduced in full.
+- [Sitemap](https://www.pulsenewscast.com/sitemap.xml): Full list of article and section URLs
+- [RSS Feed](https://www.pulsenewscast.com/rss.xml): Latest articles feed
+- [Privacy Policy](https://www.pulsenewscast.com/ta/privacy): Data and cookie usage
+- [Terms of Use](https://www.pulsenewscast.com/ta/terms): Terms of use
