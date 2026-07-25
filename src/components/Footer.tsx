@@ -14,16 +14,10 @@ const LINK_COLUMNS = [
       { label: "லைஃப் ஸ்டைல்", href: "/ta/lifestyle" },
     ],
   },
-  // {
-  //   heading: "நிறுவனம்",
-  //   links: [
-  //     { label: "எங்களை பற்றி", href: "#" },
-  //     { label: "எங்கள் குழு", href: "#" },
-  //     { label: "விளம்பரம் செய்ய", href: "#" },
-  //     { label: "பணியிடங்கள்", href: "#" },
-  //     { label: "தொடர்பு கொள்ள", href: "#" },
-  //   ],
-  // },
+  {
+    heading: "நிறுவனம்",
+    links: [{ label: "எங்களை பற்றி", href: "/ta/about" }],
+  },
   {
     heading: "உதவி",
     links: [
