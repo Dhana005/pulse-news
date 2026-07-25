@@ -30,6 +30,7 @@ const LINK_COLUMNS = [
       { label: "அடிக்கடி கேட்கப்படும் கேள்விகள்", href: "/ta/faq" },
       { label: "தனியுரிமைக் கொள்கை", href: "/ta/privacy" },
       { label: "பயன்பாட்டு விதிமுறைகள்", href: "/ta/terms" },
+      { label: "தள வரைபடம்", href: "/ta/sitemap" },
     ],
   },
 ];
