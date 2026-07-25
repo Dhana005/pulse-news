@@ -3,10 +3,12 @@ import { fetchRssItems } from "./parse";
 import { FEED_SOURCES } from "./sources";
 import { fetchNewsDataItems, NEWSDATA_CATEGORIES } from "./newsdata";
 import { ensureArticleImageBucket, generateFallbackImage, uploadArticleImage } from "./images";
+import { rewriteDescription } from "./aiSummary";
 
 const MAX_ITEMS_PER_SOURCE = 15;
 const OG_IMAGE_CONCURRENCY = 8;
 const IMAGE_GEN_CONCURRENCY = 3;
+const AI_SUMMARY_CONCURRENCY = 5;
 
 // Some sources (Dinamalar via NewsData.io especially) don't include an image
 // in their feed item at all — but their own article page usually still has
@@ -80,6 +82,39 @@ async function generateMissingImages(rows: Record<string, any>[], supabase: Supa
     }
   }
   await Promise.all(Array.from({ length: Math.min(IMAGE_GEN_CONCURRENCY, candidates.length) }, worker));
+}
+
+// Rewrites (and translates, when needed) each aggregated article's dek via
+// Gemini, so the article page can show a description without linking out to
+// the publisher — see rewriteDescription in ./aiSummary. No-op without
+// GEMINI_API_KEY. Skips rows that already have an ai_summary in the DB
+// rather than re-generating on every ingest cycle — this pipeline re-fetches
+// and re-upserts the same articles from RSS every 15 minutes for as long as
+// they stay within the feed's latest-N window, and Gemini calls aren't free.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function generateAiSummaries(rows: Record<string, any>[], supabase: SupabaseClient): Promise<void> {
+  if (!process.env.GEMINI_API_KEY) return;
+
+  const candidates = rows.filter((row) => row.source_url && row.dek);
+  if (candidates.length === 0) return;
+
+  const slugs = [...new Set(candidates.map((row) => row.slug))];
+  const { data: existing } = await supabase.from("articles").select("category_key,slug,ai_summary").in("slug", slugs);
+  const alreadySummarized = new Set(
+    (existing ?? []).filter((row) => row.ai_summary).map((row) => `${row.category_key}::${row.slug}`),
+  );
+  const needed = candidates.filter((row) => !alreadySummarized.has(`${row.category_key}::${row.slug}`));
+  if (needed.length === 0) return;
+
+  let next = 0;
+  async function worker() {
+    while (next < needed.length) {
+      const row = needed[next++];
+      const summary = await rewriteDescription(row.headline, row.dek);
+      if (summary) row.ai_summary = summary;
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(AI_SUMMARY_CONCURRENCY, needed.length) }, worker));
 }
 
 // Web Crypto SHA-1, not Node's `crypto` module — must match the Supabase
@@ -221,6 +256,7 @@ export async function runIngestion(
   });
 
   await generateMissingImages(dedupedRows, supabase);
+  await generateAiSummaries(dedupedRows, supabase);
 
   if (dedupedRows.length > 0) {
     const { error } = await supabase.from("articles").upsert(dedupedRows, { onConflict: "category_key,slug" });

@@ -111,17 +111,13 @@ export default async function ArticlePage({ params }: { params: Params }) {
           )}
 
           {article.sourceUrl ? (
-            <div className="flex flex-col gap-4">
-              {article.dek && <p className="text-[15.5px] md:text-[17px] leading-[1.7] text-text-muted m-0">{article.dek}</p>}
-              <a
-                href={article.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="inline-flex items-center gap-2 self-start px-5 py-3 rounded-lg font-semibold text-[15px]"
-                style={{ background: "var(--accent)", color: "var(--accent-text)" }}
-              >
-                {article.hasVideo ? `${article.source}-ல் பார்க்க →` : `${article.source}-இல் முழு செய்தியைப் படிக்க →`}
-              </a>
+            <div className="flex flex-col gap-2.5">
+              {(article.aiSummary || article.dek) && (
+                <p className="text-[15.5px] md:text-[17px] leading-[1.7] text-text-muted m-0">
+                  {article.aiSummary || article.dek}
+                </p>
+              )}
+              {article.source && <span className="text-[13px] text-text-faint">மூலம்: {article.source}</span>}
             </div>
           ) : (
             <div className="flex flex-col gap-5 text-[15.5px] md:text-[17px] leading-[1.85]">

@@ -13,6 +13,11 @@ export interface Article {
   contentType: ContentType;
   headline: string;
   dek: string;
+  // Gemini-rewritten (and translated, if needed) version of dek, generated
+  // once at ingest time — see src/lib/ingest/aiSummary.ts. Preferred over
+  // dek for display on the article page when present; null if generation
+  // hasn't run yet or GEMINI_API_KEY isn't configured.
+  aiSummary?: string;
   source: string;
   publishedAgo: string;
   author: string;
@@ -34,6 +39,7 @@ interface ArticleRow {
   content_type: ContentType;
   headline: string;
   dek: string | null;
+  ai_summary: string | null;
   body: string[] | null;
   source: string | null;
   source_url: string | null;
@@ -76,6 +82,7 @@ function toArticle(row: ArticleRow): Article {
     contentType: row.content_type,
     headline: row.headline,
     dek: isMostlyTamil(dek) ? dek : "",
+    aiSummary: row.ai_summary ?? undefined,
     source: row.source ?? "",
     publishedAgo: relativeTa(row.published_at),
     author: row.author ?? row.source ?? "",
