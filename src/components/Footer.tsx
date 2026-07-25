@@ -16,7 +16,10 @@ const LINK_COLUMNS = [
   },
   {
     heading: "நிறுவனம்",
-    links: [{ label: "எங்களை பற்றி", href: "/ta/about" }],
+    links: [
+      { label: "எங்களை பற்றி", href: "/ta/about" },
+      { label: "தொடர்பு கொள்ள", href: "/ta/contact" },
+    ],
   },
   {
     heading: "உதவி",
