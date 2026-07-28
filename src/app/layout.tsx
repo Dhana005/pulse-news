@@ -39,6 +39,28 @@ const THEME_INIT_SCRIPT = `
 })();
 `;
 
+// NewsMediaOrganization structured data — the schema.org type Google
+// specifically recommends for news publishers (a subtype of Organization).
+// WEBSITE_SCHEMA's `publisher` below used to reference an @id that was
+// never actually defined anywhere — this fixes that dangling reference and
+// gives Google (and anything reading structured data, e.g. AI Overviews) a
+// real, named entity to attach to the site rather than just a bare URL.
+const ORGANIZATION_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "NewsMediaOrganization",
+  "@id": "https://www.pulsenewscast.com/#organization",
+  name: "PulseNews",
+  alternateName: "Pulse News Cast",
+  url: "https://www.pulsenewscast.com/",
+  logo: {
+    "@type": "ImageObject",
+    url: "https://www.pulsenewscast.com/apple-icon.png",
+    width: 180,
+    height: 180,
+  },
+  description: "Latest breaking news, politics, business, technology, sports, entertainment and world news.",
+};
+
 // WebSite structured data (schema.org) for search engines.
 const WEBSITE_SCHEMA = {
   "@context": "https://schema.org",
@@ -49,7 +71,7 @@ const WEBSITE_SCHEMA = {
   alternateName: "PulseNewsCast",
   description: "Latest breaking news, politics, business, technology, sports, entertainment and world news.",
   publisher: {
-    "@id": "https://www.pulsenewscast.com/",
+    "@id": "https://www.pulsenewscast.com/#organization",
   },
 };
 
@@ -63,6 +85,10 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <meta name="google-adsense-account" content={ADSENSE_CLIENT_ID} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_SCHEMA) }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_SCHEMA) }}
