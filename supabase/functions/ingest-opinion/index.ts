@@ -11,7 +11,10 @@
 //
 // Deploy: paste this file's contents into the Supabase Dashboard's
 // Edge Functions editor, or `supabase functions deploy ingest-opinion`.
-// Secrets needed (Functions -> ingest-opinion -> Secrets): INGEST_SECRET.
+// Secrets needed (Functions -> ingest-opinion -> Secrets): INGEST_SECRET,
+// GEMINI_API_KEY (optional — fallback image generation is skipped if unset;
+// neither source provides a usable image, so without this every article
+// here shows the site's generic placeholder graphic instead).
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are auto-provided by Supabase.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -41,6 +44,110 @@ function stripHtml(input: string): string {
     .replace(/&#39;/g, "'")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+// Must match src/lib/ingest/images.ts's buildImagePrompt/generateFallbackImage
+// exactly (same fetch-based Gemini call, works identically in Deno and
+// Node) — kept in sync by hand, same as the `ingest` function. Vikatan's
+// editorial.rss never includes an image, and there's no per-article page to
+// scrape an og:image from without a lot more work, so this is the only way
+// these get anything other than the site's generic placeholder graphic.
+const CATEGORY_LABELS: Record<string, string> = { tamilnadu: "தமிழகம்", india: "இந்தியா" };
+const IMAGE_MODEL = "gemini-3.1-flash-lite-image";
+const STORAGE_BUCKET = "article-images";
+const IMAGE_GEN_CONCURRENCY = 3;
+
+function buildImagePrompt(headline: string, category: string): string {
+  return (
+    `Editorial news illustration for a Tamil news article. Headline (for context only — never render this or any other text in the image): "${headline}". ` +
+    `Category: ${CATEGORY_LABELS[category] ?? category}. ` +
+    "Style: abstract, symbolic, flat color-block graphic design with simple icons or silhouettes representing the topic. " +
+    "Absolutely no text, letters, or words anywhere in the image. " +
+    "Never depict a real named person's face or likeness — use generic symbolic figures only. No logos or brand marks."
+  );
+}
+
+async function generateFallbackImage(
+  headline: string,
+  category: string,
+): Promise<{ data: Uint8Array; mimeType: string } | null> {
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!apiKey) return null;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/${IMAGE_MODEL}:generateContent`,
+      {
+        method: "POST",
+        headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: buildImagePrompt(headline, category) }] }],
+          generationConfig: { responseModalities: ["IMAGE"] },
+        }),
+        signal: AbortSignal.timeout(30000),
+      },
+    );
+    if (!res.ok) return null;
+
+    const json = await res.json();
+    const parts = json?.candidates?.[0]?.content?.parts ?? [];
+    // deno-lint-ignore no-explicit-any
+    const imagePart = parts.find((p: any) => p?.inlineData?.data);
+    if (!imagePart) return null;
+
+    const binary = atob(imagePart.inlineData.data);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return { data: bytes, mimeType: imagePart.inlineData.mimeType ?? "image/png" };
+  } catch {
+    return null;
+  }
+}
+
+let bucketEnsured = false;
+
+async function ensureArticleImageBucket(supabase: ReturnType<typeof createClient>): Promise<void> {
+  if (bucketEnsured) return;
+  const { error } = await supabase.storage.createBucket(STORAGE_BUCKET, { public: true });
+  if (error && !/already exists/i.test(error.message)) throw error;
+  bucketEnsured = true;
+}
+
+async function uploadArticleImage(
+  supabase: ReturnType<typeof createClient>,
+  slug: string,
+  image: { data: Uint8Array; mimeType: string },
+): Promise<string | null> {
+  const ext = image.mimeType.split("/")[1] ?? "png";
+  const objectPath = `generated/${slug}.${ext}`;
+  const { error } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(objectPath, image.data, { contentType: image.mimeType, upsert: true });
+  if (error) return null;
+
+  const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(objectPath);
+  return data.publicUrl;
+}
+
+// deno-lint-ignore no-explicit-any
+async function generateMissingImages(rows: Record<string, any>[], supabase: ReturnType<typeof createClient>): Promise<void> {
+  if (!Deno.env.get("GEMINI_API_KEY")) return;
+
+  const candidates = rows.filter((row) => !row.image_url);
+  if (candidates.length === 0) return;
+
+  await ensureArticleImageBucket(supabase);
+
+  let next = 0;
+  async function worker() {
+    while (next < candidates.length) {
+      const row = candidates[next++];
+      const image = await generateFallbackImage(row.headline, row.category_key);
+      if (!image) continue;
+      row.image_url = await uploadArticleImage(supabase, `${row.category_key}-${row.slug}`, image);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(IMAGE_GEN_CONCURRENCY, candidates.length) }, worker));
 }
 
 interface NormalizedItem {
@@ -166,6 +273,8 @@ Deno.serve(async (req) => {
   } catch (err) {
     results.push({ source: "oneindia-factcheck", fetched: 0, error: err instanceof Error ? err.message : String(err) });
   }
+
+  await generateMissingImages(rows, supabase);
 
   if (rows.length > 0) {
     const { error } = await supabase.from("articles").upsert(rows, { onConflict: "category_key,slug" });
