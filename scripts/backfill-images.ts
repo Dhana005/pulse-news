@@ -26,8 +26,15 @@ if (!process.env.GEMINI_API_KEY) {
 }
 
 const supabase = createClient(url, serviceKey);
-const CONCURRENCY = 4;
-const PAGE_SIZE = 200;
+// Lower than the ai_summary backfill's concurrency (8) — a first run at
+// concurrency 4 generated 307 images cleanly then suddenly failed the next
+// 484 in a row, consistent with hitting a Gemini image-generation rate
+// limit partway through (a direct API call afterward succeeded immediately,
+// ruling out a content/key problem). Also add a small stagger between
+// batches so a transient limit has time to clear instead of compounding.
+const CONCURRENCY = 2;
+const BATCH_PAUSE_MS = 5000;
+const PAGE_SIZE = 50;
 
 interface Row {
   id: string;
@@ -53,10 +60,14 @@ async function main() {
   let totalFailed = 0;
   const startedAt = Date.now();
 
+  let consecutiveBadBatches = 0;
+
   for (;;) {
     const batch = await fetchBatch();
     if (batch.length === 0) break;
 
+    let batchDone = 0;
+    let batchFailed = 0;
     let next = 0;
     async function worker() {
       while (next < batch.length) {
@@ -72,19 +83,43 @@ async function main() {
         const imageUrl = image ? await uploadArticleImage(supabase, `${row.category_key}-${row.slug}`, image) : null;
         const { error } = await supabase.from("articles").update({ image_url: imageUrl ?? "" }).eq("id", row.id);
         if (error) {
-          totalFailed++;
+          batchFailed++;
           console.error(`update failed for ${row.id}: ${error.message}`);
         } else if (imageUrl) {
-          totalDone++;
+          batchDone++;
         } else {
-          totalFailed++;
+          batchFailed++;
         }
       }
     }
     await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 
+    totalDone += batchDone;
+    totalFailed += batchFailed;
     const elapsedS = Math.round((Date.now() - startedAt) / 1000);
     console.log(`progress: ${totalDone} done, ${totalFailed} failed, ${elapsedS}s elapsed`);
+
+    // A whole batch failing outright almost always means a rate limit, not
+    // bad content for 50 different articles in a row. Back off with a
+    // longer pause instead of burning through the rest of the backlog into
+    // the same wall (which is exactly what happened without this check).
+    if (batchFailed === batch.length) {
+      consecutiveBadBatches++;
+      if (consecutiveBadBatches > 5) {
+        console.error(
+          `${consecutiveBadBatches} whole batches failed in a row — this looks like a sustained ` +
+          `quota exhaustion (e.g. daily limit), not a transient per-minute rate limit. Stopping ` +
+          `rather than backing off forever. Re-run this script later once the quota resets.`,
+        );
+        process.exit(1);
+      }
+      const backoffMs = BATCH_PAUSE_MS * 2 ** consecutiveBadBatches;
+      console.log(`whole batch failed (${consecutiveBadBatches}x in a row) — backing off ${backoffMs}ms`);
+      await new Promise((r) => setTimeout(r, backoffMs));
+    } else {
+      consecutiveBadBatches = 0;
+      await new Promise((r) => setTimeout(r, BATCH_PAUSE_MS));
+    }
   }
 
   console.log(`Done. ${totalDone} generated, ${totalFailed} failed.`);
