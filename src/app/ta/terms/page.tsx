@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "பயன்பாட்டு விதிமுறைகள் — PulseNews",
+  description: "PulseNews தளத்தைப் பயன்படுத்துவதற்கான விதிமுறைகள் மற்றும் நிபந்தனைகள்.",
   alternates: { canonical: "/ta/terms" },
 };
 

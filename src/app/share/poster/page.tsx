@@ -14,6 +14,10 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   return {
     title: pageTitle,
     description: "PulseNews — தமிழ் செய்திகள்",
+    // noindex only affects Google/Bing etc. — Facebook's and X's share-link
+    // scraper bots don't honor (or need) this, they fetch og:/twitter: tags
+    // regardless, which is this page's entire purpose per the comment above.
+    robots: { index: false, follow: false },
     openGraph: {
       title: pageTitle,
       description: "PulseNews — தமிழ் செய்திகள்",

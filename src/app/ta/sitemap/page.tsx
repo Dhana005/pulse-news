@@ -6,6 +6,7 @@ import { CATEGORIES } from "@/lib/categories";
 
 export const metadata: Metadata = {
   title: "தள வரைபடம் — PulseNews",
+  description: "PulseNews தளத்தின் அனைத்து பிரிவுகள் மற்றும் பக்கங்களின் பட்டியல்.",
   alternates: { canonical: "/ta/sitemap" },
 };
 

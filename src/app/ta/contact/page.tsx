@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "தொடர்பு கொள்ள — PulseNews",
+  description: "PulseNews தொடர்பாக கேள்விகள், கருத்துகள் அல்லது செய்தியில் தவறு கண்டால் எங்களைத் தொடர்பு கொள்ளும் வழிமுறைகள்.",
   alternates: { canonical: "/ta/contact" },
 };
 

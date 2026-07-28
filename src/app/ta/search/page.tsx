@@ -8,7 +8,13 @@ type SearchParams = Promise<{ q?: string }>;
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   const { q } = await searchParams;
-  return { title: q ? `"${q}" — தேடல் முடிவுகள் — PulseNews` : "தேடல் — PulseNews" };
+  return {
+    title: q ? `"${q}" — தேடல் முடிவுகள் — PulseNews` : "தேடல் — PulseNews",
+    // Internal site search results — one unique, low-value page per query
+    // string. Still follow links so Google can reach the actual articles
+    // linked from the results, just don't index the search page itself.
+    robots: { index: false, follow: true },
+  };
 }
 
 export default async function SearchPage({ searchParams }: { searchParams: SearchParams }) {

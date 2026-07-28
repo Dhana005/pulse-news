@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "தனியுரிமைக் கொள்கை — PulseNews",
+  description: "PulseNews உங்கள் தரவை எவ்வாறு சேகரிக்கிறது, பயன்படுத்துகிறது மற்றும் பாதுகாக்கிறது என்பது குறித்த தனியுரிமைக் கொள்கை.",
   alternates: { canonical: "/ta/privacy" },
 };
 

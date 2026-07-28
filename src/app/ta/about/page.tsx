@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "எங்களை பற்றி — PulseNews",
+  description: "PulseNews என்பது தமிழகம், இந்தியா, உலகம், வணிகம், தொழில்நுட்பம், விளையாட்டு, சினிமா செய்திகளை ஒரே இடத்தில் திரட்டித் தரும் தமிழ் செய்தி தளம்.",
   alternates: { canonical: "/ta/about" },
 };
 
