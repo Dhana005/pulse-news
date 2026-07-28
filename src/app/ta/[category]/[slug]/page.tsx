@@ -18,9 +18,33 @@ export const revalidate = 60;
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { category, slug } = await params;
   const article = await getArticle(category, slug);
+  const canonical = `/ta/${category}/${slug}`;
+  if (!article) return { title: "PulseNews", alternates: { canonical } };
+
+  // Falls back through increasingly generic text so there's always a
+  // description — matters most for OG/Twitter previews (e.g. WhatsApp/
+  // Telegram link unfurls), which previously had nothing at all here.
+  const description = article.aiSummary || article.dek || article.headline;
+  const images = article.imageUrl ? [{ url: article.imageUrl, alt: article.headline }] : undefined;
+
   return {
-    title: article ? `${article.headline} — PulseNews` : "PulseNews",
-    alternates: { canonical: `/ta/${category}/${slug}` },
+    title: `${article.headline} — PulseNews`,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      type: "article",
+      title: article.headline,
+      description,
+      publishedTime: article.publishedAt,
+      authors: [article.author],
+      images,
+    },
+    twitter: {
+      card: images ? "summary_large_image" : "summary",
+      title: article.headline,
+      description,
+      images: article.imageUrl ? [article.imageUrl] : undefined,
+    },
   };
 }
 
@@ -37,8 +61,25 @@ export default async function ArticlePage({ params }: { params: Params }) {
   const label = getCategoryLabel(category);
   const related = await getRelated(category, slug);
 
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: article.headline,
+    description: article.aiSummary || article.dek || undefined,
+    image: article.imageUrl ? [article.imageUrl] : undefined,
+    datePublished: article.publishedAt,
+    dateModified: article.publishedAt,
+    author: { "@type": "Organization", name: article.author || "PulseNews" },
+    publisher: { "@id": "https://www.pulsenewscast.com/#organization" },
+    mainEntityOfPage: { "@type": "WebPage", "@id": `https://www.pulsenewscast.com/ta/${category}/${slug}` },
+  };
+
   return (
     <div className="flex flex-col flex-1">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
       <ViewTracker category={category} slug={slug} />
       <Header activeKey={category} />
       <main className="max-w-[1240px] w-full mx-auto px-4 md:px-10 pt-6 md:pt-8 pb-14 md:pb-[70px] grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 md:gap-12 flex-1">

@@ -20,6 +20,10 @@ export interface Article {
   aiSummary?: string;
   source: string;
   publishedAgo: string;
+  // Raw ISO timestamp — for structured data (NewsArticle datePublished,
+  // OpenGraph article:published_time). publishedAgo above is the relative
+  // Tamil string used for display, not suitable for those.
+  publishedAt: string;
   author: string;
   hasVideo: boolean;
   videoUrl?: string;
@@ -85,6 +89,7 @@ function toArticle(row: ArticleRow): Article {
     aiSummary: row.ai_summary ?? undefined,
     source: row.source ?? "",
     publishedAgo: relativeTa(row.published_at),
+    publishedAt: row.published_at,
     author: row.author ?? row.source ?? "",
     hasVideo: row.has_video,
     videoUrl: row.video_url ?? undefined,

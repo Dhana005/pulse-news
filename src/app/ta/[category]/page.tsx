@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     description: seo.description,
     keywords: seo.keywords,
     alternates: { canonical },
-    openGraph: { title: seo.ogTitle, description: seo.ogDescription },
+    openGraph: { title: seo.ogTitle, description: seo.ogDescription, images: ["/logo.png"] },
   };
 }
 

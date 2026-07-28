@@ -30,6 +30,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: HOME_SEO.ogTitle,
     description: HOME_SEO.ogDescription,
+    images: ["/logo.png"],
   },
 };
 
