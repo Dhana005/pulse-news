@@ -83,6 +83,15 @@ export default function RootLayout({
   return (
     <html lang="ta" className={`${hindMadurai.variable} ${poppins.variable} h-full antialiased`}>
       <head>
+        {/* Plain static <link> tags, not Next's app/icon.png file convention —
+        that convention appends a build-specific content-hash query string
+        that changes on every deploy, which violates Google Search's favicon
+        requirement that the URL stay stable. These live in /public instead,
+        served verbatim with no hashing, so the URL never changes. */}
+        <link rel="icon" href="/favicon.ico" sizes="32x32" type="image/x-icon" />
+        <link rel="icon" href="/icon.png" sizes="32x32" type="image/png" />
+        <link rel="icon" href="/icon.svg" sizes="any" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180" type="image/png" />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <meta name="google-adsense-account" content={ADSENSE_CLIENT_ID} />
         <script
