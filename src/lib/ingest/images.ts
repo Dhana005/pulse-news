@@ -10,6 +10,10 @@ import { getCategoryLabel } from "../categories";
 const IMAGE_MODEL = "gemini-3.1-flash-lite-image";
 const STORAGE_BUCKET = "article-images";
 
+// Kill switch — flip to false to re-enable. Turned off after repeated
+// Gemini image-generation rate-limit hits during the backfill runs.
+const IMAGE_GENERATION_DISABLED = true;
+
 function buildImagePrompt(headline: string, category: string): string {
   return (
     `Editorial news illustration for a Tamil news article. Headline (for context only — never render this or any other text in the image): "${headline}". ` +
@@ -24,6 +28,7 @@ export async function generateFallbackImage(
   headline: string,
   category: string,
 ): Promise<{ data: Buffer; mimeType: string } | null> {
+  if (IMAGE_GENERATION_DISABLED) return null;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
 

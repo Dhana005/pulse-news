@@ -179,6 +179,11 @@ const CATEGORY_LABELS: Record<string, string> = {
 const IMAGE_MODEL = "gemini-3.1-flash-lite-image";
 const STORAGE_BUCKET = "article-images";
 
+// Kill switch — flip to false to re-enable. Turned off after repeated
+// Gemini image-generation rate-limit hits during the backfill runs. Must
+// match src/lib/ingest/images.ts's flag of the same name.
+const IMAGE_GENERATION_DISABLED = true;
+
 // Must match src/lib/ingest/images.ts's buildImagePrompt/generateFallbackImage
 // exactly (same fetch-based Gemini call, works identically in Deno and
 // Node) — kept in sync by hand, same reasoning as slugFor/buildRow above.
@@ -199,6 +204,7 @@ async function generateFallbackImage(
   headline: string,
   category: string,
 ): Promise<{ data: Uint8Array; mimeType: string } | null> {
+  if (IMAGE_GENERATION_DISABLED) return null;
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey) return null;
 
