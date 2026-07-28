@@ -117,6 +117,21 @@ export async function getArticle(category: string, slug: string): Promise<Articl
   return data ? toArticle(data) : undefined;
 }
 
+// Consulted when getArticle finds nothing — the (category, slug) may be a
+// pre-migration duplicate URL that got consolidated (see
+// supabase/migrations/0014_dedupe_articles_by_slug.sql). Returns the
+// canonical path to permanently redirect to, or null for a genuine 404.
+export async function getArticleRedirect(category: string, slug: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("article_redirects")
+    .select("canonical_category_key,canonical_slug")
+    .eq("category_key", category)
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? `/ta/${data.canonical_category_key}/${data.canonical_slug}` : null;
+}
+
 export async function getRelated(category: string, excludeSlug: string, count = 4): Promise<Article[]> {
   const { data, error } = await supabase
     .from("articles")

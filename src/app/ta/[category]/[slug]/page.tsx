@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PlaceholderMedia from "@/components/PlaceholderMedia";
@@ -8,7 +8,7 @@ import ArticleMedia from "@/components/ArticleMedia";
 import RelatedList from "@/components/RelatedList";
 import ViewTracker from "@/components/ViewTracker";
 import { getCategoryLabel, isValidCategory } from "@/lib/categories";
-import { getArticle, getRelated } from "@/lib/data";
+import { getArticle, getArticleRedirect, getRelated } from "@/lib/data";
 import { getYouTubeEmbedUrl } from "@/lib/youtube";
 
 type Params = Promise<{ category: string; slug: string }>;
@@ -25,7 +25,11 @@ export default async function ArticlePage({ params }: { params: Params }) {
   const { category, slug } = await params;
   if (!isValidCategory(category)) notFound();
   const article = await getArticle(category, slug);
-  if (!article) notFound();
+  if (!article) {
+    const redirectTarget = await getArticleRedirect(category, slug);
+    if (redirectTarget) permanentRedirect(redirectTarget);
+    notFound();
+  }
 
   const label = getCategoryLabel(category);
   const related = await getRelated(category, slug);

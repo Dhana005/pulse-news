@@ -126,7 +126,9 @@ Deno.serve(async (req) => {
   }
 
   if (rows.length > 0) {
-    const { error } = await supabase.from("articles").upsert(rows, { onConflict: "category_key,slug" });
+    // slug (the YouTube video ID) is the article's real identity, not
+    // (category_key, slug) — see supabase/migrations/0014_dedupe_articles_by_slug.sql.
+    const { error } = await supabase.from("articles").upsert(rows, { onConflict: "slug" });
     if (error) {
       return new Response(JSON.stringify({ error: error.message, results }), { status: 500 });
     }

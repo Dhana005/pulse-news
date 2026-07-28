@@ -99,11 +99,9 @@ async function generateAiSummaries(rows: Record<string, any>[], supabase: Supaba
   if (candidates.length === 0) return;
 
   const slugs = [...new Set(candidates.map((row) => row.slug))];
-  const { data: existing } = await supabase.from("articles").select("category_key,slug,ai_summary").in("slug", slugs);
-  const alreadySummarized = new Set(
-    (existing ?? []).filter((row) => row.ai_summary).map((row) => `${row.category_key}::${row.slug}`),
-  );
-  const needed = candidates.filter((row) => !alreadySummarized.has(`${row.category_key}::${row.slug}`));
+  const { data: existing } = await supabase.from("articles").select("slug,ai_summary").in("slug", slugs);
+  const alreadySummarized = new Set((existing ?? []).filter((row) => row.ai_summary).map((row) => row.slug));
+  const needed = candidates.filter((row) => !alreadySummarized.has(row.slug));
   if (needed.length === 0) return;
 
   let next = 0;
@@ -243,15 +241,19 @@ export async function runIngestion(
 
   await backfillMissingImages(rows);
 
-  // A single batch can contain the same (category_key, slug) twice — e.g.
-  // NewsData.io sometimes returns the same story more than once in one
-  // response — which Postgres's ON CONFLICT rejects outright. Keep the
-  // first occurrence.
+  // A single batch can contain the same slug twice — e.g. NewsData.io's
+  // "top" query (mapped to tamilnadu) overlapping with its own business/
+  // technology/sports/cinema category queries returning the same
+  // underlying story, sometimes classified differently each time. slug
+  // (a hash of the source URL) is the article's real identity — dedupe
+  // and upsert on that alone, not category_key, or the same article ends
+  // up duplicated across category URLs (see
+  // supabase/migrations/0014_dedupe_articles_by_slug.sql, which cleaned up
+  // 786 rows this had already caused in production before this fix).
   const seen = new Set<string>();
   const dedupedRows = rows.filter((row) => {
-    const key = `${row.category_key}::${row.slug}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
+    if (seen.has(row.slug)) return false;
+    seen.add(row.slug);
     return true;
   });
 
@@ -259,7 +261,7 @@ export async function runIngestion(
   await generateAiSummaries(dedupedRows, supabase);
 
   if (dedupedRows.length > 0) {
-    const { error } = await supabase.from("articles").upsert(dedupedRows, { onConflict: "category_key,slug" });
+    const { error } = await supabase.from("articles").upsert(dedupedRows, { onConflict: "slug" });
     if (error) throw error;
   }
 

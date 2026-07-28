@@ -123,7 +123,9 @@ export async function runVideoIngestion(): Promise<{ upserted: number; results: 
   }
 
   if (rows.length > 0) {
-    const { error } = await supabase.from("articles").upsert(rows, { onConflict: "category_key,slug" });
+    // slug (the YouTube video ID) is the article's real identity, not
+    // (category_key, slug) — see supabase/migrations/0014_dedupe_articles_by_slug.sql.
+    const { error } = await supabase.from("articles").upsert(rows, { onConflict: "slug" });
     if (error) throw error;
   }
 
