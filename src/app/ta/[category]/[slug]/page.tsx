@@ -18,7 +18,10 @@ export const revalidate = 60;
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { category, slug } = await params;
   const article = await getArticle(category, slug);
-  return { title: article ? `${article.headline} — PulseNews` : "PulseNews" };
+  return {
+    title: article ? `${article.headline} — PulseNews` : "PulseNews",
+    alternates: { canonical: `/ta/${category}/${slug}` },
+  };
 }
 
 export default async function ArticlePage({ params }: { params: Params }) {

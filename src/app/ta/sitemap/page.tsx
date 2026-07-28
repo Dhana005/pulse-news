@@ -6,6 +6,7 @@ import { CATEGORIES } from "@/lib/categories";
 
 export const metadata: Metadata = {
   title: "தள வரைபடம் — PulseNews",
+  alternates: { canonical: "/ta/sitemap" },
 };
 
 const SECTIONS = [

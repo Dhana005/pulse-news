@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "தனியுரிமைக் கொள்கை — PulseNews",
+  alternates: { canonical: "/ta/privacy" },
 };
 
 export default function PrivacyPage() {

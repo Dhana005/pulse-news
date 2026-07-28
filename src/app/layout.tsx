@@ -25,6 +25,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.pulsenewscast.com"),
   title: "PulseNews — தமிழ் செய்திகள்",
   description: "தமிழகம், இந்தியா, உலகம், விளையாட்டு, சினிமா செய்திகள் ஒரே இடத்தில்.",
 };

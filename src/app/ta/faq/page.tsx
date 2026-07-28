@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "அடிக்கடி கேட்கப்படும் கேள்விகள் — PulseNews",
+  alternates: { canonical: "/ta/faq" },
 };
 
 const FAQS = [

@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "பயன்பாட்டு விதிமுறைகள் — PulseNews",
+  alternates: { canonical: "/ta/terms" },
 };
 
 export default function TermsPage() {

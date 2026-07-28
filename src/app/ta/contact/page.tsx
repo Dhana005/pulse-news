@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "தொடர்பு கொள்ள — PulseNews",
+  alternates: { canonical: "/ta/contact" },
 };
 
 const CONTACT_EMAIL = "pulsenewscast@gmail.com";

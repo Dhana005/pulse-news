@@ -23,11 +23,13 @@ type Params = Promise<{ category: string }>;
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { category } = await params;
   const seo = CATEGORY_SEO[category];
-  if (!seo) return { title: `${getCategoryLabel(category)} — PulseNews` };
+  const canonical = `/ta/${category}`;
+  if (!seo) return { title: `${getCategoryLabel(category)} — PulseNews`, alternates: { canonical } };
   return {
     title: seo.title,
     description: seo.description,
     keywords: seo.keywords,
+    alternates: { canonical },
     openGraph: { title: seo.ogTitle, description: seo.ogDescription },
   };
 }

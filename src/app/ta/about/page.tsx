@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "எங்களை பற்றி — PulseNews",
+  alternates: { canonical: "/ta/about" },
 };
 
 export default function AboutPage() {
