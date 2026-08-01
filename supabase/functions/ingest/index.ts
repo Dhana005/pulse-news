@@ -115,6 +115,9 @@ const OG_IMAGE_CONCURRENCY = 8;
 const IMAGE_GEN_CONCURRENCY = 3;
 const AI_SUMMARY_CONCURRENCY = 5;
 const TEXT_MODEL = "gemini-3.1-flash-lite";
+// Kill switch — flip to false to re-enable. Must match
+// src/lib/ingest/aiSummary.ts's flag of the same name.
+const AI_SUMMARY_DISABLED = true;
 
 // Some sources (Dinamalar via NewsData.io especially) don't include an image
 // in their feed item at all — but their own article page usually still has
@@ -299,6 +302,7 @@ function buildRewritePrompt(headline: string, dek: string): string {
 }
 
 async function rewriteDescription(headline: string, dek: string): Promise<string | null> {
+  if (AI_SUMMARY_DISABLED) return null;
   const apiKey = Deno.env.get("GEMINI_API_KEY");
   if (!apiKey || !dek) return null;
 

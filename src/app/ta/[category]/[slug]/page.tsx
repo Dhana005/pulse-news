@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   // Falls back through increasingly generic text so there's always a
   // description — matters most for OG/Twitter previews (e.g. WhatsApp/
   // Telegram link unfurls), which previously had nothing at all here.
-  const description = article.aiSummary || article.dek || article.headline;
+  const description = article.dek || article.headline;
   const images = article.imageUrl ? [{ url: article.imageUrl, alt: article.headline }] : undefined;
 
   return {
@@ -65,7 +65,7 @@ export default async function ArticlePage({ params }: { params: Params }) {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
     headline: article.headline,
-    description: article.aiSummary || article.dek || undefined,
+    description: article.dek || undefined,
     image: article.imageUrl ? [article.imageUrl] : undefined,
     datePublished: article.publishedAt,
     dateModified: article.publishedAt,
@@ -160,9 +160,9 @@ export default async function ArticlePage({ params }: { params: Params }) {
 
           {article.sourceUrl ? (
             <div className="flex flex-col gap-4">
-              {(article.aiSummary || article.dek) && (
+              {article.dek && (
                 <p className="text-[15.5px] md:text-[17px] leading-[1.7] text-text-muted m-0">
-                  {article.aiSummary || article.dek}
+                  {article.dek}
                 </p>
               )}
               {article.source && <span className="text-[13px] text-text-faint">மூலம்: {article.source}</span>}

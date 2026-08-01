@@ -6,6 +6,10 @@
 
 const TEXT_MODEL = "gemini-3.1-flash-lite";
 
+// Kill switch — flip to false to re-enable. Turned off since the article
+// page now only displays the publisher-provided dek, not this AI rewrite.
+const AI_SUMMARY_DISABLED = true;
+
 function buildRewritePrompt(headline: string, dek: string): string {
   return (
     "Rewrite the following news summary, in your own words, as a Tamil summary for a news aggregator site. " +
@@ -18,6 +22,7 @@ function buildRewritePrompt(headline: string, dek: string): string {
 }
 
 export async function rewriteDescription(headline: string, dek: string): Promise<string | null> {
+  if (AI_SUMMARY_DISABLED) return null;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || !dek) return null;
 
