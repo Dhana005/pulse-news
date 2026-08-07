@@ -1,22 +1,30 @@
-// Paraphrases (and translates, when needed) an aggregated article's dek so
-// the article page can show a description without linking out to the
-// publisher. No-op without GEMINI_API_KEY, same fallback-quietly pattern as
+// Writes an original Tamil summary of an aggregated article's dek so the
+// article page can show real on-site content, not just a teaser + outbound
+// link (AdSense flags pages whose only content is a link to another site as
+// "insufficient content" — see the article page's "PulseNews சுருக்கம்"
+// block). No-op without GEMINI_API_KEY, same fallback-quietly pattern as
 // images.ts in this directory. Called once per article at ingest time —
 // see generateAiSummaries in run.ts — not per page view.
 
 const TEXT_MODEL = "gemini-3.1-flash-lite";
 
-// Kill switch — flip to false to re-enable. Turned off since the article
-// page now only displays the publisher-provided dek, not this AI rewrite.
-const AI_SUMMARY_DISABLED = true;
+// Kill switch — flip to true to disable again.
+const AI_SUMMARY_DISABLED = false;
 
 function buildRewritePrompt(headline: string, dek: string): string {
   return (
-    "Rewrite the following news summary, in your own words, as a Tamil summary for a news aggregator site. " +
-    "If the original summary below is in English or mixed English/Tamil, translate it to Tamil as part of the rewrite. " +
-    "Paraphrase — do not copy sentences verbatim — but preserve every fact exactly. " +
-    "Keep it to 1-2 sentences, roughly the same length as the original. " +
-    "Reply with the rewritten Tamil summary only — no preamble, no quotes, no language other than Tamil.\n\n" +
+    "Write an original Tamil news summary for a news aggregator site, based only on the facts in the " +
+    "headline and original summary below. Do not invent any facts, numbers, names, dates, or quotes that " +
+    "are not present in the source material below — this is the single most important rule.\n\n" +
+    "If the source material below has enough detail, write it as 2 short paragraphs (roughly 4-6 sentences " +
+    "total) explaining what happened, using only the facts given. If the source material is very brief " +
+    "(e.g. barely more than the headline), do not pad it with invented detail — instead write a single " +
+    "well-formed paragraph of 2-3 sentences that faithfully expresses the same facts in your own words.\n\n" +
+    "If the original summary below is in English or mixed English/Tamil, translate it to Tamil as part of " +
+    "the rewrite. Do not copy sentences verbatim from the original summary — express it in your own words " +
+    "while preserving every fact exactly.\n\n" +
+    "Reply with the Tamil summary text only — no preamble, no headings, no quotes, no language other than " +
+    "Tamil. Separate paragraphs with a blank line.\n\n" +
     `Headline: ${headline}\nOriginal summary: ${dek}`
   );
 }

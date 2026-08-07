@@ -115,9 +115,9 @@ const OG_IMAGE_CONCURRENCY = 8;
 const IMAGE_GEN_CONCURRENCY = 3;
 const AI_SUMMARY_CONCURRENCY = 5;
 const TEXT_MODEL = "gemini-3.1-flash-lite";
-// Kill switch — flip to false to re-enable. Must match
+// Kill switch — flip to true to disable. Must match
 // src/lib/ingest/aiSummary.ts's flag of the same name.
-const AI_SUMMARY_DISABLED = true;
+const AI_SUMMARY_DISABLED = false;
 
 // Some sources (Dinamalar via NewsData.io especially) don't include an image
 // in their feed item at all — but their own article page usually still has
@@ -292,11 +292,18 @@ async function generateMissingImages(rows: Record<string, any>[], supabase: Retu
 // sync by hand, same reasoning as slugFor/buildRow above.
 function buildRewritePrompt(headline: string, dek: string): string {
   return (
-    "Rewrite the following news summary, in your own words, as a Tamil summary for a news aggregator site. " +
-    "If the original summary below is in English or mixed English/Tamil, translate it to Tamil as part of the rewrite. " +
-    "Paraphrase — do not copy sentences verbatim — but preserve every fact exactly. " +
-    "Keep it to 1-2 sentences, roughly the same length as the original. " +
-    "Reply with the rewritten Tamil summary only — no preamble, no quotes, no language other than Tamil.\n\n" +
+    "Write an original Tamil news summary for a news aggregator site, based only on the facts in the " +
+    "headline and original summary below. Do not invent any facts, numbers, names, dates, or quotes that " +
+    "are not present in the source material below — this is the single most important rule.\n\n" +
+    "If the source material below has enough detail, write it as 2 short paragraphs (roughly 4-6 sentences " +
+    "total) explaining what happened, using only the facts given. If the source material is very brief " +
+    "(e.g. barely more than the headline), do not pad it with invented detail — instead write a single " +
+    "well-formed paragraph of 2-3 sentences that faithfully expresses the same facts in your own words.\n\n" +
+    "If the original summary below is in English or mixed English/Tamil, translate it to Tamil as part of " +
+    "the rewrite. Do not copy sentences verbatim from the original summary — express it in your own words " +
+    "while preserving every fact exactly.\n\n" +
+    "Reply with the Tamil summary text only — no preamble, no headings, no quotes, no language other than " +
+    "Tamil. Separate paragraphs with a blank line.\n\n" +
     `Headline: ${headline}\nOriginal summary: ${dek}`
   );
 }

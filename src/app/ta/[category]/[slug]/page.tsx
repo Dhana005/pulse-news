@@ -160,10 +160,27 @@ export default async function ArticlePage({ params }: { params: Params }) {
 
           {article.sourceUrl ? (
             <div className="flex flex-col gap-4">
-              {article.dek && (
-                <p className="text-[15.5px] md:text-[17px] leading-[1.7] text-text-muted m-0">
-                  {article.dek}
-                </p>
+              {article.aiSummary ? (
+                <div className="flex flex-col gap-2.5">
+                  <span className="text-[12.5px] font-bold text-text-faint tracking-wide">
+                    PulseNews சுருக்கம்
+                  </span>
+                  {article.aiSummary
+                    .split("\n")
+                    .map((p) => p.trim())
+                    .filter(Boolean)
+                    .map((para, i) => (
+                      <p key={i} className="text-[15.5px] md:text-[17px] leading-[1.7] text-text-muted m-0">
+                        {para}
+                      </p>
+                    ))}
+                </div>
+              ) : (
+                article.dek && (
+                  <p className="text-[15.5px] md:text-[17px] leading-[1.7] text-text-muted m-0">
+                    {article.dek}
+                  </p>
+                )
               )}
               {article.source && <span className="text-[13px] text-text-faint">மூலம்: {article.source}</span>}
               <a
