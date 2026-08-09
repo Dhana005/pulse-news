@@ -115,6 +115,57 @@ async function generateAiSummaries(rows: Record<string, any>[], supabase: Supaba
   await Promise.all(Array.from({ length: Math.min(AI_SUMMARY_CONCURRENCY, needed.length) }, worker));
 }
 
+// A slug's category_key can shift between ingest runs — e.g. a story drops
+// out of NewsData's "top" query (tamilnadu) by the next run but is still
+// returned by its "business" query, or a source updates an RSS item's
+// category tag. upsert (onConflict: "slug") silently moves the row to a new
+// URL when that happens, which orphans the old URL — the same mechanism
+// that caused the one-time cleanup in
+// supabase/migrations/0014_dedupe_articles_by_slug.sql, except ongoing.
+// Records a redirect from the old (category_key, slug) to the new one
+// before the upsert overwrites category_key, and flattens any existing
+// redirects that pointed at the old category so multi-hop moves still
+// resolve in one lookup — see getArticleRedirect in src/lib/data.ts.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function recordCategoryMoves(rows: Record<string, any>[], supabase: SupabaseClient): Promise<void> {
+  const slugs = rows.map((r) => r.slug);
+  if (slugs.length === 0) return;
+
+  const { data: existing, error: fetchError } = await supabase
+    .from("articles")
+    .select("slug,category_key")
+    .in("slug", slugs);
+  if (fetchError) throw fetchError;
+
+  const oldCategoryBySlug = new Map((existing ?? []).map((r) => [r.slug, r.category_key]));
+  const moved = rows.filter((row) => {
+    const oldCategory = oldCategoryBySlug.get(row.slug);
+    return oldCategory && oldCategory !== row.category_key;
+  });
+  if (moved.length === 0) return;
+
+  const redirects = moved.map((row) => ({
+    category_key: oldCategoryBySlug.get(row.slug),
+    slug: row.slug,
+    canonical_category_key: row.category_key,
+    canonical_slug: row.slug,
+  }));
+  const { error: upsertError } = await supabase
+    .from("article_redirects")
+    .upsert(redirects, { onConflict: "category_key,slug" });
+  if (upsertError) throw upsertError;
+
+  for (const row of moved) {
+    const oldCategory = oldCategoryBySlug.get(row.slug);
+    const { error: chainError } = await supabase
+      .from("article_redirects")
+      .update({ canonical_category_key: row.category_key, canonical_slug: row.slug })
+      .eq("canonical_category_key", oldCategory)
+      .eq("canonical_slug", row.slug);
+    if (chainError) throw chainError;
+  }
+}
+
 // Web Crypto SHA-1, not Node's `crypto` module — must match the Supabase
 // Edge Function's slugFor exactly (same runtime API, Deno), since both
 // paths upsert against the same (category_key, slug) unique constraint.
@@ -195,7 +246,7 @@ export async function runIngestion(
       try {
         const items = await fetchRssItems(source.url);
         let classified = 0;
-        for (const item of items.slice(0, MAX_ITEMS_PER_SOURCE)) {
+        for (const item of items.slice(0, source.maxItems ?? MAX_ITEMS_PER_SOURCE)) {
           const category = source.classify(item.categories);
           if (!category || !item.title || !item.link) continue;
           classified += 1;
@@ -261,6 +312,7 @@ export async function runIngestion(
   await generateAiSummaries(dedupedRows, supabase);
 
   if (dedupedRows.length > 0) {
+    await recordCategoryMoves(dedupedRows, supabase);
     const { error } = await supabase.from("articles").upsert(dedupedRows, { onConflict: "slug" });
     if (error) throw error;
   }

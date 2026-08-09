@@ -13,6 +13,8 @@ export interface FeedSource {
   contentType: ContentType;
   // Returns the target category key, or null to skip the item.
   classify: (categories: string[]) => string | null;
+  // Overrides run.ts's default MAX_ITEMS_PER_SOURCE cutoff for this source.
+  maxItems?: number;
 }
 
 const TN_CITY_TAGS = new Set([
@@ -36,6 +38,10 @@ const NON_INDIA_CITY_TAGS = new Set(["singapore", "dubai", "london", "newyork", 
 function classifyOneindia(categories: string[]): string | null {
   for (const raw of categories) {
     const cat = raw.toLowerCase();
+    // Oneindia tags its daily rate-update stories "gold-rate" directly (not
+    // under the "news/" prefix like everything else here) — verified against
+    // its raw RSS. Checked first since it's unambiguous.
+    if (cat.startsWith("gold-rate")) return "gold";
     if (cat.startsWith("news/sports")) return "sports";
     if (cat.startsWith("news/international")) return "world";
     if (cat === "news/india") return "india";
@@ -84,5 +90,12 @@ export const FEED_SOURCES: FeedSource[] = [
     sourceLabel: "Oneindia Tamil",
     contentType: "news",
     classify: classifyOneindia,
+    // Unlike the Vikatan feeds above (each already pre-filtered to one
+    // vertical), this is Oneindia's general feed mixing many topics —
+    // astrology, weather, sports, regional news, and gold-rate updates
+    // all interleaved. The default cutoff below regularly cut off before
+    // reaching that day's gold-rate item (verified: it sat at index 24 of
+    // 50 in a live fetch), so this source gets a higher one.
+    maxItems: 40,
   },
 ];

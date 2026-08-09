@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://www.pulsenewscast.com/sitemap.xml
+Sitemap: https://www.pulsenewscast.com/news-sitemap.xml

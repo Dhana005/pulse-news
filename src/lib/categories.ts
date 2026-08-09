@@ -6,8 +6,10 @@ export interface CategoryDef {
 export const CATEGORIES: CategoryDef[] = [
   { key: "tamilnadu", label: "தமிழகம்" },
   { key: "india", label: "இந்தியா" },
+  { key: "politics", label: "அரசியல்" },
   { key: "world", label: "உலகம்" },
   { key: "business", label: "வணிகம்" },
+  { key: "gold", label: "தங்கம் விலை" },
   { key: "technology", label: "தொழில்நுட்பம்" },
   { key: "sports", label: "விளையாட்டு" },
   { key: "cinema", label: "சினிமா" },

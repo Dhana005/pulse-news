@@ -26,6 +26,9 @@ interface FeedSource {
   sourceLabel: string;
   contentType: ContentType;
   classify: (categories: string[]) => string | null;
+  // Overrides MAX_ITEMS_PER_SOURCE below for this source. Must match
+  // src/lib/ingest/sources.ts's FeedSource.maxItems.
+  maxItems?: number;
 }
 
 const TN_CITY_TAGS = new Set([
@@ -37,6 +40,11 @@ const NON_INDIA_CITY_TAGS = new Set(["singapore", "dubai", "london", "newyork", 
 function classifyOneindia(categories: string[]): string | null {
   for (const raw of categories) {
     const cat = raw.toLowerCase();
+    // Oneindia tags its daily rate-update stories "gold-rate" directly (not
+    // under the "news/" prefix like everything else here) — verified against
+    // its raw RSS. Checked first since it's unambiguous. Must match
+    // src/lib/ingest/sources.ts's classifyOneindia exactly.
+    if (cat.startsWith("gold-rate")) return "gold";
     if (cat.startsWith("news/sports")) return "sports";
     if (cat.startsWith("news/international")) return "world";
     if (cat === "news/india") return "india";
@@ -59,12 +67,17 @@ const FEED_SOURCES: FeedSource[] = [
   { url: `https://www.vikatan.com/api/v1/collections/international.rss?&${VIKATAN_PERIOD}`, sourceLabel: "விகடன்", contentType: "news", classify: () => "world" },
   { url: `https://www.vikatan.com/api/v1/collections/sports-news.rss?&${VIKATAN_PERIOD}`, sourceLabel: "விகடன்", contentType: "news", classify: () => "sports" },
   { url: `https://www.vikatan.com/api/v1/collections/kollywood-entertainment.rss?&${VIKATAN_PERIOD}`, sourceLabel: "விகடன்", contentType: "cinema", classify: () => "cinema" },
-  { url: "https://tamil.oneindia.com/rss/feeds/oneindia-tamil-fb.xml", sourceLabel: "Oneindia Tamil", contentType: "news", classify: classifyOneindia },
+  // Unlike the Vikatan feeds above (each pre-filtered to one vertical),
+  // this is Oneindia's general feed mixing many topics — astrology,
+  // weather, sports, regional news, gold-rate updates, all interleaved.
+  // Must match src/lib/ingest/sources.ts's maxItems for this source.
+  { url: "https://tamil.oneindia.com/rss/feeds/oneindia-tamil-fb.xml", sourceLabel: "Oneindia Tamil", contentType: "news", classify: classifyOneindia, maxItems: 40 },
 ];
 
 // NewsData.io's Tamil corpus skews heavily to Tamil Nadu regional sources
-// even under category=politics/top — no clean "India national" split, so
-// "india" is left to the Vikatan RSS feed above.
+// even under category=top — no clean "India national" split, so "india" is
+// left to the Vikatan RSS feed above. "politics" below is now used as its
+// own category (checked before "top" so it wins the dedup).
 interface NewsDataCategoryConfig {
   category: string;
   targetCategory: string;
@@ -72,6 +85,10 @@ interface NewsDataCategoryConfig {
   country?: string;
 }
 const NEWSDATA_CATEGORIES: NewsDataCategoryConfig[] = [
+  // Checked before "top" below — must match src/lib/ingest/newsdata.ts's
+  // ordering exactly (dedup keeps the first occurrence per slug, so
+  // politics has to win over the same story appearing under "top").
+  { category: "politics", targetCategory: "politics", contentType: "news", country: "in" },
   { category: "top", targetCategory: "tamilnadu", contentType: "news", country: "in" },
   { category: "sports", targetCategory: "sports", contentType: "news", country: "in" },
   { category: "entertainment", targetCategory: "cinema", contentType: "cinema", country: "in" },
@@ -171,8 +188,10 @@ async function backfillMissingImages(rows: Record<string, any>[]): Promise<void>
 const CATEGORY_LABELS: Record<string, string> = {
   tamilnadu: "தமிழகம்",
   india: "இந்தியா",
+  politics: "அரசியல்",
   world: "உலகம்",
   business: "வணிகம்",
+  gold: "தங்கம் விலை",
   technology: "தொழில்நுட்பம்",
   sports: "விளையாட்டு",
   cinema: "சினிமா",
@@ -364,6 +383,56 @@ async function generateAiSummaries(rows: Record<string, any>[], supabase: Return
   await Promise.all(Array.from({ length: Math.min(AI_SUMMARY_CONCURRENCY, needed.length) }, worker));
 }
 
+// Must match src/lib/ingest/run.ts's recordCategoryMoves exactly — a slug's
+// category_key can shift between ingest runs (e.g. a story drops out of
+// NewsData's "top" query by the next run but is still returned by its
+// "business" query), and upsert (onConflict: "slug") silently moves the row
+// to a new URL when that happens, orphaning the old one. Same mechanism as
+// the one-time cleanup in supabase/migrations/0014_dedupe_articles_by_slug.sql,
+// except ongoing. Records a redirect before the upsert overwrites
+// category_key, and flattens existing redirects that pointed at the old
+// category — see getArticleRedirect in src/lib/data.ts.
+// deno-lint-ignore no-explicit-any
+async function recordCategoryMoves(rows: Record<string, any>[], supabase: ReturnType<typeof createClient>): Promise<void> {
+  const slugs = rows.map((r) => r.slug);
+  if (slugs.length === 0) return;
+
+  const { data: existing, error: fetchError } = await supabase
+    .from("articles")
+    .select("slug,category_key")
+    .in("slug", slugs);
+  if (fetchError) throw fetchError;
+
+  // deno-lint-ignore no-explicit-any
+  const oldCategoryBySlug = new Map((existing ?? []).map((r: any) => [r.slug, r.category_key]));
+  const moved = rows.filter((row) => {
+    const oldCategory = oldCategoryBySlug.get(row.slug);
+    return oldCategory && oldCategory !== row.category_key;
+  });
+  if (moved.length === 0) return;
+
+  const redirects = moved.map((row) => ({
+    category_key: oldCategoryBySlug.get(row.slug),
+    slug: row.slug,
+    canonical_category_key: row.category_key,
+    canonical_slug: row.slug,
+  }));
+  const { error: upsertError } = await supabase
+    .from("article_redirects")
+    .upsert(redirects, { onConflict: "category_key,slug" });
+  if (upsertError) throw upsertError;
+
+  for (const row of moved) {
+    const oldCategory = oldCategoryBySlug.get(row.slug);
+    const { error: chainError } = await supabase
+      .from("article_redirects")
+      .update({ canonical_category_key: row.category_key, canonical_slug: row.slug })
+      .eq("canonical_category_key", oldCategory)
+      .eq("canonical_slug", row.slug);
+    if (chainError) throw chainError;
+  }
+}
+
 // Must match src/lib/ingest/run.ts's slugFor exactly (same Web Crypto API,
 // available natively in both Deno and Node) — both paths upsert against the
 // same slug unique constraint.
@@ -466,7 +535,7 @@ Deno.serve(async (req) => {
       try {
         const items = await fetchRssItems(source.url);
         let classified = 0;
-        for (const item of items.slice(0, MAX_ITEMS_PER_SOURCE)) {
+        for (const item of items.slice(0, source.maxItems ?? MAX_ITEMS_PER_SOURCE)) {
           const category = source.classify(item.categories);
           if (!category || !item.title || !item.link) continue;
           classified += 1;
@@ -519,6 +588,7 @@ Deno.serve(async (req) => {
   await generateAiSummaries(dedupedRows, supabase);
 
   if (dedupedRows.length > 0) {
+    await recordCategoryMoves(dedupedRows, supabase);
     const { error } = await supabase.from("articles").upsert(dedupedRows, { onConflict: "slug" });
     if (error) {
       return new Response(JSON.stringify({ error: error.message, results }), { status: 500 });

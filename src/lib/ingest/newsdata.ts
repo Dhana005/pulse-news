@@ -27,6 +27,12 @@ interface NewsDataCategoryConfig {
 }
 
 export const NEWSDATA_CATEGORIES: NewsDataCategoryConfig[] = [
+  // Checked before "top" below — NewsData's own "top" query returns
+  // political stories too (same underlying overlap noted in the comment
+  // above), so putting "politics" first means dedup keeps those as
+  // politics rather than tamilnadu, giving a clean split instead of
+  // duplicating the same stories across both categories.
+  { category: "politics", targetCategory: "politics", contentType: "news", country: "in" },
   { category: "top", targetCategory: "tamilnadu", contentType: "news", country: "in" },
   { category: "sports", targetCategory: "sports", contentType: "news", country: "in" },
   { category: "entertainment", targetCategory: "cinema", contentType: "cinema", country: "in" },
