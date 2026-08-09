@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import PlaceholderMedia from "@/components/PlaceholderMedia";
 import ArticleMedia from "@/components/ArticleMedia";
 import RelatedList from "@/components/RelatedList";
+import TelegramFollowCard from "@/components/TelegramFollowCard";
 import ViewTracker from "@/components/ViewTracker";
 import { getCategoryLabel, isValidCategory } from "@/lib/categories";
 import { getArticle, getArticleRedirect, getRelated } from "@/lib/data";
@@ -215,7 +216,8 @@ export default async function ArticlePage({ params }: { params: Params }) {
           </div>
         </article>
 
-        <aside>
+        <aside className="flex flex-col gap-7 md:gap-8">
+          <TelegramFollowCard category={category} />
           <RelatedList items={related} />
         </aside>
       </main>

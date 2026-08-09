@@ -1,4 +1,5 @@
 import GoogleTranslate from "./GoogleTranslate";
+import { MAIN_TELEGRAM_CHANNEL } from "@/lib/categories";
 
 const LINK_COLUMNS = [
   {
@@ -77,6 +78,18 @@ export default function Footer() {
             <p className="text-[13.5px] leading-[1.7] m-0 max-w-[32ch] opacity-80">
               உண்மையான செய்திகள், வேகமான வெளியீடு, உங்கள் மொழியில்.
             </p>
+            <a
+              href={MAIN_TELEGRAM_CHANNEL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 self-start px-3.5 py-2 rounded-lg font-semibold text-[13px] text-white mt-1"
+              style={{ background: "#26A5E4" }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M21.5 3.5 2.7 10.9c-1.2.5-1.2 1.2-.2 1.5l4.8 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.5l2.2-2.1 4.6 3.4c.8.5 1.4.2 1.6-.8L22.8 5c.3-1.3-.5-1.9-1.3-1.5z" />
+              </svg>
+              Telegram-இல் பின்தொடர
+            </a>
             <div className="flex gap-2.5 mt-1 hidden">
               {SOCIAL_ICONS.map((icon) => (
                 <a

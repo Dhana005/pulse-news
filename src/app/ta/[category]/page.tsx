@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import ArticleList from "@/components/ArticleList";
 import HoroscopeTeaser from "@/components/HoroscopeTeaser";
 import TrendingList from "@/components/TrendingList";
+import TelegramFollowCard from "@/components/TelegramFollowCard";
 import { CATEGORIES, getCategoryLabel, isValidCategory } from "@/lib/categories";
 import { getTrending, getCategoryArticles } from "@/lib/data";
 import { CATEGORY_SEO } from "@/lib/seo";
@@ -64,6 +65,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
           />
         </div>
         <aside className="flex flex-col gap-7 md:gap-8">
+          <TelegramFollowCard category={category} />
           <HoroscopeTeaser />
           <TrendingList items={trending} />
         </aside>
