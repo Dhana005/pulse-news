@@ -309,7 +309,18 @@ async function generateMissingImages(rows: Record<string, any>[], supabase: Retu
 // Must match src/lib/ingest/aiSummary.ts's rewriteDescription exactly (same
 // fetch-based Gemini call, works identically in Deno and Node) — kept in
 // sync by hand, same reasoning as slugFor/buildRow above.
+//
+// Some NewsData.io sources return their full article body as "description"
+// rather than a short teaser (seen up to 15,435 chars in production) — that
+// entire blob was going into the prompt as input tokens for what only needs
+// to produce a 2-3 sentence rewrite. 500 chars is already more source detail
+// than the prompt's own target output length. Must match
+// src/lib/ingest/aiSummary.ts's MAX_DEK_INPUT_CHARS.
+const MAX_DEK_INPUT_CHARS = 500;
+
 function buildRewritePrompt(headline: string, dek: string): string {
+  const truncatedDek =
+    dek.length > MAX_DEK_INPUT_CHARS ? dek.slice(0, MAX_DEK_INPUT_CHARS) + "…" : dek;
   return (
     "Write an original Tamil news summary for a news aggregator site, based only on the facts in the " +
     "headline and original summary below. Do not invent any facts, numbers, names, dates, or quotes that " +
@@ -323,7 +334,7 @@ function buildRewritePrompt(headline: string, dek: string): string {
     "while preserving every fact exactly.\n\n" +
     "Reply with the Tamil summary text only — no preamble, no headings, no quotes, no language other than " +
     "Tamil. Separate paragraphs with a blank line.\n\n" +
-    `Headline: ${headline}\nOriginal summary: ${dek}`
+    `Headline: ${headline}\nOriginal summary: ${truncatedDek}`
   );
 }
 
