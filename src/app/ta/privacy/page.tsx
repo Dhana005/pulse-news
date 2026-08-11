@@ -57,6 +57,16 @@ export default function PrivacyPage() {
           </section>
 
           <section>
+            <h2 className="text-[18px] font-bold text-text m-0 mb-2">Amazon Associate திட்டம்</h2>
+            <p className="m-0">
+              PulseNews, Amazon Associates திட்டத்தில் பங்கேற்பாளராக உள்ளது — இணையதளங்கள் Amazon.in-க்கு
+              விளம்பர இணைப்புகள் மூலம் விளம்பரக் கட்டணங்களை ஈட்டுவதற்காக வடிவமைக்கப்பட்ட ஒரு இணை-சந்தைப்படுத்தல்
+              திட்டம். தொழில்நுட்பப் பிரிவில் உள்ள Amazon இணைப்புகள் மூலம் நீங்கள் ஒரு பொருளை வாங்கினால்,
+              கூடுதல் செலவின்றி PulseNews ஒரு சிறு கமிஷனைப் பெறலாம்.
+            </p>
+          </section>
+
+          <section>
             <h2 className="text-[18px] font-bold text-text m-0 mb-2">மூன்றாம் தரப்பு உள்ளடக்கம்</h2>
             <p className="m-0">
               இந்தத் தளத்தில் உள்ள செய்திகள் பல்வேறு தமிழ் செய்தி வெளியீட்டாளர்களிடமிருந்து திரட்டப்படுகின்றன.

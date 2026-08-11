@@ -7,6 +7,7 @@ import PlaceholderMedia from "@/components/PlaceholderMedia";
 import ArticleMedia from "@/components/ArticleMedia";
 import RelatedList from "@/components/RelatedList";
 import TelegramFollowCard from "@/components/TelegramFollowCard";
+import AmazonDealsCard from "@/components/AmazonDealsCard";
 import ViewTracker from "@/components/ViewTracker";
 import { getCategoryLabel, isValidCategory } from "@/lib/categories";
 import { getArticle, getArticleRedirect, getRelated } from "@/lib/data";
@@ -218,6 +219,7 @@ export default async function ArticlePage({ params }: { params: Params }) {
 
         <aside className="flex flex-col gap-7 md:gap-8">
           <TelegramFollowCard category={category} />
+          {category === "technology" && <AmazonDealsCard />}
           <RelatedList items={related} />
         </aside>
       </main>
