@@ -13,7 +13,9 @@
 // or `supabase functions deploy ingest` if you have the CLI linked.
 // Secrets needed (Functions -> ingest -> Secrets): INGEST_SECRET,
 // NEWSDATA_API_KEY (optional — NewsData source is skipped if unset),
-// GEMINI_API_KEY (optional — ai_summary generation is skipped if unset).
+// GEMINI_API_KEY (optional — fallback image generation is skipped if unset;
+// currently disabled anyway, see IMAGE_GENERATION_DISABLED below).
+// ai_summary generation moved to the ai-summary-batch function.
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are auto-provided by Supabase.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -130,11 +132,6 @@ function asArray<T>(value: T | T[] | undefined): T[] {
 
 const OG_IMAGE_CONCURRENCY = 8;
 const IMAGE_GEN_CONCURRENCY = 3;
-const AI_SUMMARY_CONCURRENCY = 5;
-const TEXT_MODEL = "gemini-3.1-flash-lite";
-// Kill switch — flip to true to disable. Must match
-// src/lib/ingest/aiSummary.ts's flag of the same name.
-const AI_SUMMARY_DISABLED = false;
 
 // Some sources (Dinamalar via NewsData.io especially) don't include an image
 // in their feed item at all — but their own article page usually still has
@@ -306,93 +303,10 @@ async function generateMissingImages(rows: Record<string, any>[], supabase: Retu
   await Promise.all(Array.from({ length: Math.min(IMAGE_GEN_CONCURRENCY, candidates.length) }, worker));
 }
 
-// Must match src/lib/ingest/aiSummary.ts's rewriteDescription exactly (same
-// fetch-based Gemini call, works identically in Deno and Node) — kept in
-// sync by hand, same reasoning as slugFor/buildRow above.
-//
-// Some NewsData.io sources return their full article body as "description"
-// rather than a short teaser (seen up to 15,435 chars in production) — that
-// entire blob was going into the prompt as input tokens for what only needs
-// to produce a 2-3 sentence rewrite. 500 chars is already more source detail
-// than the prompt's own target output length. Must match
-// src/lib/ingest/aiSummary.ts's MAX_DEK_INPUT_CHARS.
-const MAX_DEK_INPUT_CHARS = 500;
-
-function buildRewritePrompt(headline: string, dek: string): string {
-  const truncatedDek =
-    dek.length > MAX_DEK_INPUT_CHARS ? dek.slice(0, MAX_DEK_INPUT_CHARS) + "…" : dek;
-  return (
-    "Write an original Tamil news summary for a news aggregator site, based only on the facts in the " +
-    "headline and original summary below. Do not invent any facts, numbers, names, dates, or quotes that " +
-    "are not present in the source material below — this is the single most important rule.\n\n" +
-    "If the source material below has enough detail, write it as 2 short paragraphs (roughly 4-6 sentences " +
-    "total) explaining what happened, using only the facts given. If the source material is very brief " +
-    "(e.g. barely more than the headline), do not pad it with invented detail — instead write a single " +
-    "well-formed paragraph of 2-3 sentences that faithfully expresses the same facts in your own words.\n\n" +
-    "If the original summary below is in English or mixed English/Tamil, translate it to Tamil as part of " +
-    "the rewrite. Do not copy sentences verbatim from the original summary — express it in your own words " +
-    "while preserving every fact exactly.\n\n" +
-    "Reply with the Tamil summary text only — no preamble, no headings, no quotes, no language other than " +
-    "Tamil. Separate paragraphs with a blank line.\n\n" +
-    `Headline: ${headline}\nOriginal summary: ${truncatedDek}`
-  );
-}
-
-async function rewriteDescription(headline: string, dek: string): Promise<string | null> {
-  if (AI_SUMMARY_DISABLED) return null;
-  const apiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!apiKey || !dek) return null;
-
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/${TEXT_MODEL}:generateContent`,
-      {
-        method: "POST",
-        headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: buildRewritePrompt(headline, dek) }] }] }),
-        signal: AbortSignal.timeout(15000),
-      },
-    );
-    if (!res.ok) return null;
-    const json = await res.json();
-    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    return text || null;
-  } catch {
-    return null;
-  }
-}
-
-// Skips rows that already have an ai_summary in the DB rather than
-// re-generating on every ingest cycle — this function re-fetches and
-// re-upserts the same articles from RSS every 15 minutes for as long as
-// they stay within the feed's latest-N window, and Gemini calls aren't free.
-// deno-lint-ignore no-explicit-any
-async function generateAiSummaries(rows: Record<string, any>[], supabase: ReturnType<typeof createClient>): Promise<void> {
-  if (!Deno.env.get("GEMINI_API_KEY")) return;
-
-  const candidates = rows.filter((row) => row.source_url && row.dek);
-  if (candidates.length === 0) return;
-
-  const slugs = [...new Set(candidates.map((row) => row.slug))];
-  const { data: existing } = await supabase.from("articles").select("slug,ai_summary").in("slug", slugs);
-  const alreadySummarized = new Set(
-    (existing ?? []).filter((row: { ai_summary: string | null }) => row.ai_summary).map(
-      (row: { slug: string }) => row.slug,
-    ),
-  );
-  const needed = candidates.filter((row) => !alreadySummarized.has(row.slug));
-  if (needed.length === 0) return;
-
-  let next = 0;
-  async function worker() {
-    while (next < needed.length) {
-      const row = needed[next++];
-      const summary = await rewriteDescription(row.headline, row.dek);
-      if (summary) row.ai_summary = summary;
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(AI_SUMMARY_CONCURRENCY, needed.length) }, worker));
-}
+// ai_summary generation moved to the ai-summary-batch function (Gemini
+// Batch API, 50% cheaper) — see supabase/functions/ai-summary-batch. New
+// articles just stay on the dek fallback (see the article page's
+// aiSummary || dek logic) until that function's next cycle picks them up.
 
 // Must match src/lib/ingest/run.ts's recordCategoryMoves exactly — a slug's
 // category_key can shift between ingest runs (e.g. a story drops out of
@@ -596,7 +510,6 @@ Deno.serve(async (req) => {
   });
 
   await generateMissingImages(dedupedRows, supabase);
-  await generateAiSummaries(dedupedRows, supabase);
 
   if (dedupedRows.length > 0) {
     await recordCategoryMoves(dedupedRows, supabase);
