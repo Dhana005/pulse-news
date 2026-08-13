@@ -3,15 +3,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getStoredConsent, setStoredConsent } from "@/lib/consent";
-import { injectTrackingScripts } from "@/lib/tracking";
+import { injectAdScripts, injectClarity, updateAdConsent } from "@/lib/tracking";
 
 export default function CookieConsentBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // Always loaded — Consent Mode (see layout.tsx's CONSENT_INIT_SCRIPT)
+    // governs whether these tags actually set cookies, not whether they load.
+    injectAdScripts();
     const stored = getStoredConsent();
     if (stored === "granted") {
-      injectTrackingScripts();
+      injectClarity();
     } else if (stored === null) {
       setVisible(true);
     }
@@ -19,12 +22,14 @@ export default function CookieConsentBanner() {
 
   function accept() {
     setStoredConsent("granted");
-    injectTrackingScripts();
+    updateAdConsent("granted");
+    injectClarity();
     setVisible(false);
   }
 
   function reject() {
     setStoredConsent("denied");
+    updateAdConsent("denied");
     setVisible(false);
   }
 

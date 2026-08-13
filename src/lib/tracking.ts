@@ -1,7 +1,11 @@
-// GTM/GA/Clarity/AdSense — moved out of layout.tsx so they only load after
-// cookie consent is granted (see CookieConsentBanner). Called once, either
-// immediately on Accept or on mount if a prior visit already granted
-// consent (see CookieConsentBanner's effect).
+// GTM/GA/Clarity/AdSense — moved out of layout.tsx to keep layout.tsx a
+// server component. GTM/GA/AdSense (injectAdScripts) load unconditionally on
+// every page and are governed by Google Consent Mode signals instead (see
+// CONSENT_INIT_SCRIPT in layout.tsx and updateAdConsent below) — AdSense's
+// review crawler never clicks the cookie-consent banner, so gating the
+// script itself behind consent meant the crawler could never see it
+// execute. Clarity doesn't understand Consent Mode, so it stays gated
+// behind actual accept (see CookieConsentBanner), same as GoogleTranslate.
 
 // None of these IDs are secret — all public in the page's HTML by design
 // once loaded, same reasoning as when they lived in layout.tsx.
@@ -9,6 +13,13 @@ const ADSENSE_CLIENT_ID = "ca-pub-5364676429059788";
 const GA_MEASUREMENT_ID = "G-WVBZT5S2S3";
 const GTM_ID = "GTM-MKXKS66S";
 const CLARITY_PROJECT_ID = "xq8rs4hdlj";
+
+declare global {
+  interface Window {
+    dataLayer?: unknown[];
+    gtag?: (...args: unknown[]) => void;
+  }
+}
 
 const GTM_INIT_SCRIPT = `
 (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -33,7 +44,8 @@ const CLARITY_INIT_SCRIPT = `
 })(window, document, "clarity", "script", "${CLARITY_PROJECT_ID}");
 `;
 
-let injected = false;
+let adScriptsInjected = false;
+let clarityInjected = false;
 
 function inlineScript(html: string): void {
   const script = document.createElement("script");
@@ -48,9 +60,9 @@ function externalScript(src: string): void {
   document.head.appendChild(script);
 }
 
-export function injectTrackingScripts(): void {
-  if (injected) return;
-  injected = true;
+export function injectAdScripts(): void {
+  if (adScriptsInjected) return;
+  adScriptsInjected = true;
 
   inlineScript(GTM_INIT_SCRIPT);
   // AdSense's own self-check flags a console warning on scripts carrying
@@ -65,5 +77,22 @@ export function injectTrackingScripts(): void {
 
   externalScript(`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`);
   inlineScript(GA_INIT_SCRIPT);
+}
+
+export function injectClarity(): void {
+  if (clarityInjected) return;
+  clarityInjected = true;
   inlineScript(CLARITY_INIT_SCRIPT);
+}
+
+// Tells GTM/gtag/AdSense whether they may actually set cookies / personalize
+// — the scripts themselves are already loaded (injectAdScripts runs
+// unconditionally), Consent Mode is what gates their behavior.
+export function updateAdConsent(choice: "granted" | "denied"): void {
+  window.gtag?.("consent", "update", {
+    ad_storage: choice,
+    ad_user_data: choice,
+    ad_personalization: choice,
+    analytics_storage: choice,
+  });
 }

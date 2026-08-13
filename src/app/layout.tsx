@@ -5,9 +5,13 @@ import "./globals.css";
 
 // Google AdSense's site-ownership meta tag — not a tracking script itself
 // (sets no cookies, runs no JS), so it's fine to keep unconditional. The
-// actual adsbygoogle.js script only loads after cookie consent — see
-// src/lib/tracking.ts. Publisher ID is not secret (it's public in every
-// page's HTML by design), so it's fine to hardcode rather than env-var it.
+// adsbygoogle.js script itself also loads unconditionally now (see
+// src/lib/tracking.ts) — AdSense's own review crawler never clicks the
+// cookie-consent banner, so gating the script behind consent meant the
+// crawler could never see it execute. Consent Mode (CONSENT_INIT_SCRIPT
+// below) is what actually governs cookies/personalization instead. Publisher
+// ID is not secret (it's public in every page's HTML by design), so it's
+// fine to hardcode rather than env-var it.
 const ADSENSE_CLIENT_ID = "ca-pub-5364676429059788";
 
 const hindMadurai = Hind_Madurai({
@@ -35,6 +39,36 @@ const THEME_INIT_SCRIPT = `
   try {
     var stored = localStorage.getItem('pn-theme');
     document.documentElement.setAttribute('data-theme', stored === 'dark' ? 'dark' : 'light');
+  } catch (e) {}
+})();
+`;
+
+// Google Consent Mode v2 default. Must run before GTM/gtag/AdSense load
+// (see injectAdScripts in src/lib/tracking.ts), so it lives here as an
+// unconditional inline <head> script rather than in a client-mounted
+// component. Storage key must match consent.ts's STORAGE_KEY
+// ("pn-cookie-consent") — duplicated here since this is plain script text,
+// not importable JS.
+const CONSENT_INIT_SCRIPT = `
+(function () {
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { window.dataLayer.push(arguments); }
+  window.gtag = gtag;
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+  });
+  try {
+    if (localStorage.getItem('pn-cookie-consent') === 'granted') {
+      gtag('consent', 'update', {
+        ad_storage: 'granted',
+        ad_user_data: 'granted',
+        ad_personalization: 'granted',
+        analytics_storage: 'granted',
+      });
+    }
   } catch (e) {}
 })();
 `;
@@ -93,6 +127,7 @@ export default function RootLayout({
         <link rel="icon" href="/icon.svg" sizes="any" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180" type="image/png" />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: CONSENT_INIT_SCRIPT }} />
         <meta name="google-adsense-account" content={ADSENSE_CLIENT_ID} />
         <script
           type="application/ld+json"
