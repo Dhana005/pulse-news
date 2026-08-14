@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Fragment } from "react";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import Header from "@/components/Header";
@@ -8,6 +9,9 @@ import ArticleMedia from "@/components/ArticleMedia";
 import RelatedList from "@/components/RelatedList";
 import TelegramFollowCard from "@/components/TelegramFollowCard";
 import AmazonDealsCard from "@/components/AmazonDealsCard";
+import DisplayAd from "@/components/DisplayAd";
+import InArticleAd from "@/components/InArticleAd";
+import MultiplexAd from "@/components/MultiplexAd";
 import ViewTracker from "@/components/ViewTracker";
 import { getCategoryLabel, isValidCategory } from "@/lib/categories";
 import { getArticle, getArticleRedirect, getRelated } from "@/lib/data";
@@ -184,6 +188,10 @@ export default async function ArticlePage({ params }: { params: Params }) {
                   </p>
                 )
               )}
+              {/* Only next to the (multi-paragraph) AI summary — a bare dek
+              fallback is a single short sentence, too thin to justify an
+              in-article ad next to it. */}
+              {article.aiSummary && <InArticleAd slot="3097217410" />}
               {article.source && <span className="text-[13px] text-text-faint">மூலம்: {article.source}</span>}
               <a
                 href={article.sourceUrl}
@@ -198,9 +206,12 @@ export default async function ArticlePage({ params }: { params: Params }) {
           ) : (
             <div className="flex flex-col gap-5 text-[15.5px] md:text-[17px] leading-[1.85]">
               {article.bodyParas.map((p, i) => (
-                <p key={i} className="m-0">
-                  {p}
-                </p>
+                <Fragment key={i}>
+                  <p className="m-0">{p}</p>
+                  {/* Mid-article, not top/bottom — needs at least a
+                  paragraph of lead-in and a paragraph of content after it. */}
+                  {i === 0 && article.bodyParas.length > 2 && <InArticleAd slot="3097217410" />}
+                </Fragment>
               ))}
             </div>
           )}
@@ -220,8 +231,13 @@ export default async function ArticlePage({ params }: { params: Params }) {
         <aside className="flex flex-col gap-7 md:gap-8">
           <TelegramFollowCard category={category} />
           {category === "technology" && <AmazonDealsCard />}
+          <DisplayAd slot="2675183612" />
           <RelatedList items={related} />
         </aside>
+
+        <div className="lg:col-span-2">
+          <MultiplexAd slot="5392208260" />
+        </div>
       </main>
       <Footer />
     </div>

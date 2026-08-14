@@ -12,6 +12,8 @@ import VideoNewsSection from "@/components/VideoNewsSection";
 import PhotoGallerySection from "@/components/PhotoGallerySection";
 import EditorsPicksSection from "@/components/EditorsPicksSection";
 import Footer from "@/components/Footer";
+import DisplayAd from "@/components/DisplayAd";
+import MultiplexAd from "@/components/MultiplexAd";
 import {
   getHeroFeed,
   getFeaturedArticles,
@@ -63,6 +65,7 @@ export default async function HomePage() {
           <aside className="flex flex-col gap-6">
             <MostReadList items={mostRead} />
             <LiveUpdatesWidget />
+            <DisplayAd slot="2675183612" />
           </aside>
         </div>
 
@@ -71,6 +74,10 @@ export default async function HomePage() {
             <CategoryRiver key={key} category={key} articles={riverArticles[i]} />
           ))}
         </section>
+
+        <div className="mb-9 md:mb-12">
+          <MultiplexAd slot="5392208260" />
+        </div>
 
         <HoroscopeWidget readings={readings} today={todayLabel()} />
         <VideoNewsSection />

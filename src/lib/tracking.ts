@@ -9,7 +9,7 @@
 
 // None of these IDs are secret — all public in the page's HTML by design
 // once loaded, same reasoning as when they lived in layout.tsx.
-const ADSENSE_CLIENT_ID = "ca-pub-5364676429059788";
+export const ADSENSE_CLIENT_ID = "ca-pub-5364676429059788";
 const GA_MEASUREMENT_ID = "G-WVBZT5S2S3";
 const GTM_ID = "GTM-MKXKS66S";
 const CLARITY_PROJECT_ID = "xq8rs4hdlj";
@@ -18,6 +18,7 @@ declare global {
   interface Window {
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
+    adsbygoogle?: unknown[];
   }
 }
 

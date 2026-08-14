@@ -8,6 +8,8 @@ import HoroscopeTeaser from "@/components/HoroscopeTeaser";
 import TrendingList from "@/components/TrendingList";
 import TelegramFollowCard from "@/components/TelegramFollowCard";
 import AmazonDealsCard from "@/components/AmazonDealsCard";
+import DisplayAd from "@/components/DisplayAd";
+import MultiplexAd from "@/components/MultiplexAd";
 import { CATEGORIES, getCategoryLabel, isValidCategory } from "@/lib/categories";
 import { getTrending, getCategoryArticles } from "@/lib/data";
 import { CATEGORY_SEO } from "@/lib/seo";
@@ -68,9 +70,14 @@ export default async function CategoryPage({ params }: { params: Params }) {
         <aside className="flex flex-col gap-7 md:gap-8">
           <TelegramFollowCard category={category} />
           {category === "technology" && <AmazonDealsCard />}
+          <DisplayAd slot="2675183612" />
           <HoroscopeTeaser />
           <TrendingList items={trending} />
         </aside>
+
+        <div className="lg:col-span-2">
+          <MultiplexAd slot="5392208260" />
+        </div>
       </main>
       <Footer />
     </div>
