@@ -14,7 +14,7 @@ import InArticleAd from "@/components/InArticleAd";
 import MultiplexAd from "@/components/MultiplexAd";
 import ViewTracker from "@/components/ViewTracker";
 import { getCategoryLabel, isValidCategory } from "@/lib/categories";
-import { getArticle, getArticleRedirect, getRelated } from "@/lib/data";
+import { getArticle, getArticleRedirect, getRelated, isThinArticle } from "@/lib/data";
 import { getYouTubeEmbedUrl } from "@/lib/youtube";
 
 type Params = Promise<{ category: string; slug: string }>;
@@ -37,6 +37,12 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     title: `${article.headline} — PulseNews`,
     description,
     alternates: { canonical },
+    // Pages with no real text beyond the headline/teaser have nothing to
+    // offer independent of the outbound source link — keep those out of
+    // the index rather than let them count against the site's overall
+    // content quality (still `follow` so Google can reach other pages
+    // linked from here). Same reasoning as the search page's robots tag.
+    ...(isThinArticle(article) && { robots: { index: false, follow: true } }),
     openGraph: {
       type: "article",
       title: article.headline,
@@ -66,6 +72,10 @@ export default async function ArticlePage({ params }: { params: Params }) {
 
   const label = getCategoryLabel(category);
   const related = await getRelated(category, slug);
+  // No ad units on pages with no real text beyond the headline/teaser —
+  // see isThinArticle's doc comment. Same gate everywhere ads could go on
+  // this page, not just the in-article slot.
+  const thin = isThinArticle(article);
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -191,7 +201,7 @@ export default async function ArticlePage({ params }: { params: Params }) {
               {/* Only next to the (multi-paragraph) AI summary — a bare dek
               fallback is a single short sentence, too thin to justify an
               in-article ad next to it. */}
-              {article.aiSummary && <InArticleAd slot="3097217410" />}
+              {!thin && article.aiSummary && <InArticleAd slot="3097217410" />}
               {article.source && <span className="text-[13px] text-text-faint">மூலம்: {article.source}</span>}
               <a
                 href={article.sourceUrl}
@@ -210,7 +220,7 @@ export default async function ArticlePage({ params }: { params: Params }) {
                   <p className="m-0">{p}</p>
                   {/* Mid-article, not top/bottom — needs at least a
                   paragraph of lead-in and a paragraph of content after it. */}
-                  {i === 0 && article.bodyParas.length > 2 && <InArticleAd slot="3097217410" />}
+                  {!thin && i === 0 && article.bodyParas.length > 2 && <InArticleAd slot="3097217410" />}
                 </Fragment>
               ))}
             </div>
@@ -231,13 +241,15 @@ export default async function ArticlePage({ params }: { params: Params }) {
         <aside className="flex flex-col gap-7 md:gap-8">
           <TelegramFollowCard category={category} />
           {category === "technology" && <AmazonDealsCard />}
-          <DisplayAd slot="2675183612" />
+          {!thin && <DisplayAd slot="2675183612" />}
           <RelatedList items={related} />
         </aside>
 
-        <div className="lg:col-span-2">
-          <MultiplexAd slot="5392208260" />
-        </div>
+        {!thin && (
+          <div className="lg:col-span-2">
+            <MultiplexAd slot="5392208260" />
+          </div>
+        )}
       </main>
       <Footer />
     </div>
