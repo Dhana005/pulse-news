@@ -1,0 +1,12 @@
+-- The anon role (used by src/lib/supabase.ts's client — every read in
+-- data.ts goes through it) had statement_timeout=3s set at the platform
+-- level. Two genuine slow queries were found and fixed with proper indexes
+-- (0019, 0020, both verified 500x+ faster via EXPLAIN ANALYZE), but the
+-- homepage fires ~7 queries concurrently, and PostgREST/connection-pool
+-- overhead on a cold Vercel build connection could still occasionally push
+-- one past 3s, causing repeated build failures on 2026-09-02 (reproduced
+-- 5 times in a row on the same page). Raised to 8s, matching what the
+-- authenticator role already has — real queries now have headroom against
+-- cold-start overhead, while still bounding how long any single anonymous
+-- request can hold a connection.
+alter role anon set statement_timeout = '8s';
