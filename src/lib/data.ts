@@ -72,13 +72,26 @@ function isMostlyTamil(text: string): boolean {
 // A page whose only real text is a one-line teaser (or nothing at all)
 // beyond the headline has no "reason to visit" independent of the outbound
 // source link — exactly what AdSense/Google flag as thin/low-value content.
-// 200 chars ~= a full sentence or two; verified against production data
-// that most (63%) articles clear this via aiSummary alone. Used to keep
-// these pages out of the index and off ad inventory (see the article page)
-// rather than let them drag down how Google judges the site as a whole.
-const SUBSTANTIVE_TEXT_MIN_CHARS = 200;
+// Raised from 200 to 400 after an audit (2026-09-02) found 200 let ~41% of
+// the whole catalogue through on nothing but a short AI paraphrase of a
+// thin source snippet — technically "not thin" but not substantive either.
+// 400 chars ~= a real short paragraph, not just a sentence.
+const SUBSTANTIVE_TEXT_MIN_CHARS = 400;
 
-export function isThinArticle(article: Pick<Article, "dek" | "aiSummary" | "sourceUrl" | "bodyParas">): boolean {
+// Some outlets publish rolling multi-topic "headline roundup" bulletins
+// (News18's "Today Headlines" franchise, seen both via its YouTube channel
+// and its own site's RSS feed) rather than single-story articles. Their
+// descriptions concatenate many unrelated topics and can run thousands of
+// characters — clearing any length threshold without ever being about one
+// specific story — so length alone can't catch them; the title convention
+// this franchise uses consistently can. Found via the same 2026-09-02 audit:
+// two of these had byte-identical AI summaries across separate URLs.
+const BULLETIN_ROUNDUP_TITLE = /^today(\s+\d{1,2}\s*(am|pm))?\s+headlines\b/i;
+
+export function isThinArticle(
+  article: Pick<Article, "headline" | "dek" | "aiSummary" | "sourceUrl" | "bodyParas">,
+): boolean {
+  if (BULLETIN_ROUNDUP_TITLE.test(article.headline)) return true;
   if (!article.sourceUrl) {
     return article.bodyParas.join("").length < SUBSTANTIVE_TEXT_MIN_CHARS;
   }
@@ -96,6 +109,7 @@ export function isThinArticle(article: Pick<Article, "dek" | "aiSummary" | "sour
 // page itself — the two must agree, or a sitemap could list a URL the page
 // itself excludes from indexing.
 export function isThinRow(row: {
+  headline: string;
   dek: string | null;
   ai_summary: string | null;
   source_url: string | null;
@@ -103,6 +117,7 @@ export function isThinRow(row: {
 }): boolean {
   const dek = row.dek ?? "";
   return isThinArticle({
+    headline: row.headline,
     dek: isMostlyTamil(dek) ? dek : "",
     aiSummary: row.ai_summary ?? undefined,
     sourceUrl: row.source_url ?? undefined,

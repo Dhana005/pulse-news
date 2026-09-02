@@ -24,6 +24,7 @@ interface Row {
   slug: string;
   category_key: string;
   published_at: string;
+  headline: string;
   dek: string | null;
   ai_summary: string | null;
   source_url: string | null;
@@ -42,7 +43,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ page: s
   for (;;) {
     let query = supabase
       .from("articles")
-      .select("id, slug, category_key, published_at, dek, ai_summary, source_url, body")
+      .select("id, slug, category_key, published_at, headline, dek, ai_summary, source_url, body")
       .order("id", { ascending: true })
       .limit(SUPABASE_CHUNK);
     query = cursor ? query.gt("id", cursor) : query.gte("id", gte);
