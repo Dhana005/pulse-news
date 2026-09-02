@@ -57,6 +57,22 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const firstPara = paragraphs[0] ?? "";
     const dek = firstPara.length > 200 ? `${firstPara.slice(0, 199).trimEnd()}…` : firstPara;
 
+    // Pulls a real photo from one of the synthesized source articles rather
+    // than always leaving image_url null — every editorial article was
+    // publishing with a broken/placeholder image before this, since nothing
+    // populated it. Same "use the publisher's own image" pattern already in
+    // use for ordinary aggregator articles elsewhere on the site.
+    let imageUrl: string | null = null;
+    if (draft.source_article_ids?.length > 0) {
+      const { data: sourceArticles } = await supabase
+        .from("articles")
+        .select("image_url")
+        .in("id", draft.source_article_ids)
+        .not("image_url", "is", null)
+        .limit(1);
+      imageUrl = sourceArticles?.[0]?.image_url ?? null;
+    }
+
     const slug = `ed-${await slugFor(id)}`;
     const { data: inserted, error: insertError } = await supabase
       .from("articles")
@@ -77,7 +93,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         published_at: new Date().toISOString(),
         has_video: false,
         video_url: null,
-        image_url: null,
+        image_url: imageUrl,
         tags: [draft.category_key, "editorial"],
       })
       .select("id")
