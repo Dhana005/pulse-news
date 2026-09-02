@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PlaceholderMedia from "@/components/PlaceholderMedia";
 import ArticleMedia from "@/components/ArticleMedia";
+import ArticleShareIcons from "@/components/ArticleShareIcons";
 import RelatedList from "@/components/RelatedList";
 import TelegramFollowCard from "@/components/TelegramFollowCard";
 import AmazonDealsCard from "@/components/AmazonDealsCard";
@@ -18,6 +19,8 @@ import { getArticle, getArticleRedirect, getRelated, isThinArticle } from "@/lib
 import { getYouTubeEmbedUrl } from "@/lib/youtube";
 
 type Params = Promise<{ category: string; slug: string }>;
+
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const revalidate = 60;
 
@@ -139,23 +142,26 @@ export default async function ArticlePage({ params }: { params: Params }) {
           )}
 
           <div className="flex items-center gap-4 mb-5 pb-5 border-b border-border">
-            <PlaceholderMedia className="w-[38px] h-[38px] rounded-full shrink-0" />
+            {/* Real PulseNews mark for the site's own editorial pieces
+            (no sourceUrl — see isThinArticle's doc comment) rather than the
+            generic placeholder, which stays for aggregator articles since
+            those aren't actually PulseNews's own byline. */}
+            {article.sourceUrl ? (
+              <PlaceholderMedia className="w-[38px] h-[38px] rounded-full shrink-0" />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element -- tiny static logo, not worth next/image's overhead here
+              <img
+                src="/apple-icon.png"
+                alt=""
+                className="w-[38px] h-[38px] rounded-full shrink-0 border border-border"
+              />
+            )}
             <div className="flex flex-col gap-0.5">
               <span className="text-[14.5px] font-semibold">{article.author}</span>
               <span className="text-[12.5px] text-text-faint">{article.publishedAgo} · புதுப்பிக்கப்பட்டது</span>
             </div>
             <div className="flex-1" />
-            <div className="hidden sm:flex gap-2.5">
-              {["✉", "↗", "⚑"].map((ic) => (
-                <button
-                  key={ic}
-                  aria-label="பகிர்"
-                  className="w-[34px] h-[34px] rounded-full border border-border flex items-center justify-center text-text-muted cursor-pointer"
-                >
-                  {ic}
-                </button>
-              ))}
-            </div>
+            <ArticleShareIcons url={`${BASE_URL}/ta/${category}/${slug}`} headline={article.headline} />
           </div>
 
           {article.hasVideo ? (
