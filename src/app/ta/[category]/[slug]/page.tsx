@@ -30,7 +30,20 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   // Falls back through increasingly generic text so there's always a
   // description — matters most for OG/Twitter previews (e.g. WhatsApp/
   // Telegram link unfurls), which previously had nothing at all here.
-  const description = article.dek || article.headline;
+  // aiSummary first (same preference as the on-page body — see toArticle's
+  // doc comment): some sources' raw dek is not a summary at all — News18's
+  // video-bulletin RSS feed in particular dumps the entire multi-topic
+  // description plus channel/subscribe boilerplate into it (seen up to
+  // ~3,800 chars in production) — so falling back to dek only when no
+  // aiSummary exists, and hard-capping length, keeps a scraped/promotional
+  // wall of text from ever becoming a page's search-result snippet or
+  // social-share preview.
+  const MAX_DESCRIPTION_CHARS = 200;
+  const rawDescription = article.aiSummary || article.dek || article.headline;
+  const description =
+    rawDescription.length > MAX_DESCRIPTION_CHARS
+      ? `${rawDescription.slice(0, MAX_DESCRIPTION_CHARS - 1).trimEnd()}…`
+      : rawDescription;
   const images = article.imageUrl ? [{ url: article.imageUrl, alt: article.headline }] : undefined;
 
   return {
