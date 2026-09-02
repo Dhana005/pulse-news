@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { isThinRow } from "@/lib/data";
 
 // Google News Sitemap (https://developers.google.com/search/docs/crawling-indexing/sitemaps/news-sitemap)
 // — a separate feed from the general sitemap.ts (which only lists static +
@@ -7,6 +8,11 @@ import { supabase } from "@/lib/supabase";
 // this can't reuse the generic MetadataRoute.Sitemap file convention (no
 // <news:news> namespace support) — same reasoning as rss.xml/route.ts using
 // a raw Response instead. Linked from public/robots.txt's Sitemap: line.
+//
+// Thin articles get `noindex` on their own page (see isThinArticle's doc
+// comment in lib/data.ts) — submitting them here anyway would hand Google
+// News a feed that contradicts that signal, so the same check gates entry
+// into this sitemap too.
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 const PUBLICATION_NAME = "PulseNews";
@@ -31,7 +37,7 @@ export async function GET() {
   const since = new Date(Date.now() - WINDOW_HOURS * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from("articles")
-    .select("slug, category_key, headline, published_at")
+    .select("slug, category_key, headline, published_at, dek, ai_summary, source_url, body")
     .gt("published_at", since)
     .order("published_at", { ascending: false })
     .limit(MAX_URLS);
@@ -39,6 +45,7 @@ export async function GET() {
   if (error) throw error;
 
   const urls = (data ?? [])
+    .filter((row) => !isThinRow(row))
     .map((row) => {
       const loc = `${BASE_URL}/ta/${row.category_key}/${row.slug}`;
       const publishedIso = new Date(row.published_at).toISOString();

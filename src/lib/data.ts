@@ -87,6 +87,29 @@ export function isThinArticle(article: Pick<Article, "dek" | "aiSummary" | "sour
   return !hasSubstantiveSummary && !hasSubstantiveDek;
 }
 
+// Same check as isThinArticle, but taking a raw Supabase row shape (a subset
+// of ArticleRow) so callers that only need a thin/not-thin verdict — sitemap
+// routes, mainly — can select just these columns instead of the full row
+// toArticle needs. Applies the same isMostlyTamil filter to dek that
+// toArticle does, so a long non-Tamil dek can't count as substantive here
+// when it would actually render as "" (and thus noindex) on the article
+// page itself — the two must agree, or a sitemap could list a URL the page
+// itself excludes from indexing.
+export function isThinRow(row: {
+  dek: string | null;
+  ai_summary: string | null;
+  source_url: string | null;
+  body: string[] | null;
+}): boolean {
+  const dek = row.dek ?? "";
+  return isThinArticle({
+    dek: isMostlyTamil(dek) ? dek : "",
+    aiSummary: row.ai_summary ?? undefined,
+    sourceUrl: row.source_url ?? undefined,
+    bodyParas: row.body ?? [],
+  });
+}
+
 function relativeTa(iso: string): string {
   const minutes = Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
   if (minutes < 60) return `${minutes} நிமிடம் முன்`;
