@@ -1,0 +1,14 @@
+-- Second half of the recurring build-timeout root cause (see
+-- 0019_published_at_index.sql for the first half). Homepage's getMostRead
+-- (src/lib/data.ts) filters by a published_at range AND sorts by
+-- (view_count desc, published_at desc) — neither the plain view_count
+-- index nor the new published_at index alone can serve that combination
+-- efficiently. On a mostly-zero view_count table (new site, most traffic
+-- not yet accrued), the view_count-only index forced Postgres to scan past
+-- thousands of non-matching rows before finding ones inside the 3-day
+-- window — verified directly: 1.17s for one query, consistently enough to
+-- blow the build's statement timeout on /ta specifically (reproduced
+-- twice in a row at the same point). This composite index lets the range
+-- filter apply as an index condition instead of a post-scan filter,
+-- confirmed at 2.2ms for the same query — a ~500x improvement.
+create index if not exists articles_mostread_idx on articles (view_count desc, published_at desc);
