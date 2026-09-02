@@ -25,6 +25,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("articles")
     .select("slug, category_key, headline, dek, published_at")
+    .eq("is_published", true)
     .order("published_at", { ascending: false })
     .limit(50);
 

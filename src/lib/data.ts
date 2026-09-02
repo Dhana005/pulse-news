@@ -161,6 +161,7 @@ export async function getCategoryArticles(category: string, limit = 24, offset =
     .from("articles")
     .select("*")
     .eq("category_key", category)
+    .eq("is_published", true)
     .order("published_at", { ascending: false })
     .range(offset, offset + limit - 1);
   if (error) throw error;
@@ -173,6 +174,7 @@ export async function getArticle(category: string, slug: string): Promise<Articl
     .select("*")
     .eq("category_key", category)
     .eq("slug", slug)
+    .eq("is_published", true)
     .maybeSingle();
   if (error) throw error;
   return data ? toArticle(data) : undefined;
@@ -198,6 +200,7 @@ export async function getRelated(category: string, excludeSlug: string, count = 
     .from("articles")
     .select("*")
     .eq("category_key", category)
+    .eq("is_published", true)
     .neq("slug", excludeSlug)
     .order("published_at", { ascending: false })
     .limit(count);
@@ -235,6 +238,7 @@ export async function getTrending(count = 5): Promise<Article[]> {
   const { data, error } = await supabase
     .from("articles")
     .select("*")
+    .eq("is_published", true)
     .order("published_at", { ascending: false })
     .limit(Math.max(count * 8, 30));
   if (error) throw error;
@@ -242,10 +246,11 @@ export async function getTrending(count = 5): Promise<Article[]> {
   return rows.map(toArticle);
 }
 
-export async function getHeroFeed(): Promise<{ lead: Article; side: Article[] }> {
+export async function getHeroFeed(): Promise<{ lead: Article | undefined; side: Article[] }> {
   const { data, error } = await supabase
     .from("articles")
     .select("*")
+    .eq("is_published", true)
     .order("published_at", { ascending: false })
     .limit(30);
   if (error) throw error;
@@ -260,6 +265,7 @@ export async function getVideoArticles(count = 4): Promise<Article[]> {
     .from("articles")
     .select("*")
     .eq("has_video", true)
+    .eq("is_published", true)
     .order("published_at", { ascending: false })
     .limit(Math.max(count * 8, 30));
   if (error) throw error;
@@ -269,8 +275,8 @@ export async function getVideoArticles(count = 4): Promise<Article[]> {
 
 export async function getEditorsPicks(): Promise<{ opinions: Article[]; factCheck: Article | null }> {
   const [{ data: opinionRows, error: opinionError }, { data: factRows, error: factError }] = await Promise.all([
-    supabase.from("articles").select("*").contains("tags", ["opinion"]).order("published_at", { ascending: false }).limit(3),
-    supabase.from("articles").select("*").contains("tags", ["factcheck"]).order("published_at", { ascending: false }).limit(1),
+    supabase.from("articles").select("*").eq("is_published", true).contains("tags", ["opinion"]).order("published_at", { ascending: false }).limit(3),
+    supabase.from("articles").select("*").eq("is_published", true).contains("tags", ["factcheck"]).order("published_at", { ascending: false }).limit(1),
   ]);
   if (opinionError) throw opinionError;
   if (factError) throw factError;
@@ -308,12 +314,14 @@ export async function getPhotoGalleries(): Promise<PhotoGallery[]> {
           .from("articles")
           .select("id", { count: "exact", head: true })
           .eq("category_key", category)
+          .eq("is_published", true)
           .not("image_url", "is", null)
           .gt("published_at", since),
         supabase
           .from("articles")
           .select("image_url")
           .eq("category_key", category)
+          .eq("is_published", true)
           .not("image_url", "is", null)
           .gt("published_at", since)
           .order("published_at", { ascending: false })
@@ -331,6 +339,7 @@ export async function getFeaturedArticles(count = 6): Promise<Article[]> {
   const { data, error } = await supabase
     .from("articles")
     .select("*")
+    .eq("is_published", true)
     .order("published_at", { ascending: false })
     .limit(Math.max(count * 8, 40));
   if (error) throw error;
@@ -342,6 +351,7 @@ export async function getMostRead(count = 5): Promise<Article[]> {
   const { data, error } = await supabase
     .from("articles")
     .select("*")
+    .eq("is_published", true)
     .gt("published_at", new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString())
     .order("view_count", { ascending: false })
     .order("published_at", { ascending: false })
@@ -358,8 +368,8 @@ export async function searchArticles(query: string, limit = 24): Promise<Article
   // takes a raw comma-separated filter string, so interpolating user input
   // into it would let a query containing "," or "(" alter the filter logic.
   const [byHeadline, byDek] = await Promise.all([
-    supabase.from("articles").select("*").ilike("headline", pattern).order("published_at", { ascending: false }).limit(limit),
-    supabase.from("articles").select("*").ilike("dek", pattern).order("published_at", { ascending: false }).limit(limit),
+    supabase.from("articles").select("*").eq("is_published", true).ilike("headline", pattern).order("published_at", { ascending: false }).limit(limit),
+    supabase.from("articles").select("*").eq("is_published", true).ilike("dek", pattern).order("published_at", { ascending: false }).limit(limit),
   ]);
   if (byHeadline.error) throw byHeadline.error;
   if (byDek.error) throw byDek.error;
@@ -380,6 +390,7 @@ export async function getTickerItems(): Promise<string[]> {
   const { data, error } = await supabase
     .from("articles")
     .select("headline, source")
+    .eq("is_published", true)
     .order("published_at", { ascending: false })
     .limit(30);
   if (error) throw error;

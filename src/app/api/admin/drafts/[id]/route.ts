@@ -95,6 +95,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         video_url: null,
         image_url: imageUrl,
         tags: [draft.category_key, "editorial"],
+        // The only insert path in the app that should ever set this true —
+        // every auto-ingest path (run.ts, video.ts, opinion.ts) defaults to
+        // false and stays hidden from the site until reviewed here.
+        is_published: true,
       })
       .select("id")
       .single();

@@ -29,6 +29,14 @@ export default function ArticleList({
     setLoading(false);
   }
 
+  if (articles.length === 0) {
+    return (
+      <p className="text-[14.5px] text-text-muted py-8">
+        இந்தப் பிரிவில் தற்போது கட்டுரைகள் இல்லை. விரைவில் புதிய கட்டுரைகள் வெளியிடப்படும்.
+      </p>
+    );
+  }
+
   return (
     <div>
       <div className="flex flex-col">

@@ -42,6 +42,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("articles")
     .select("slug, category_key, headline, published_at, dek, ai_summary, source_url, body")
+    .eq("is_published", true)
     .gt("published_at", since)
     .order("published_at", { ascending: false })
     .limit(MAX_URLS);

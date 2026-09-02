@@ -4,7 +4,12 @@ import PlaceholderMedia from "./PlaceholderMedia";
 import { getCategoryLabel } from "@/lib/categories";
 import type { Article } from "@/lib/data";
 
-export default function HeroSection({ lead, side }: { lead: Article; side: Article[] }) {
+export default function HeroSection({ lead, side }: { lead: Article | undefined; side: Article[] }) {
+  // Only possible when the site has zero published articles at all (e.g.
+  // right after hiding all auto-ingested content, before any editorial
+  // piece is approved) — see the site-wide is_published switch.
+  if (!lead) return null;
+
   return (
     <section className="rounded-xl border border-border bg-surface shadow-sm overflow-hidden flex flex-col lg:flex-row mb-10 md:mb-13">
       <Link href={`/ta/${lead.category}/${lead.slug}`} className="relative block h-[300px] lg:h-[460px] lg:flex-[1.6] lg:min-w-0">

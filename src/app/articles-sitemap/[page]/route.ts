@@ -44,6 +44,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ page: s
     let query = supabase
       .from("articles")
       .select("id, slug, category_key, published_at, headline, dek, ai_summary, source_url, body")
+      .eq("is_published", true)
       .order("id", { ascending: true })
       .limit(SUPABASE_CHUNK);
     query = cursor ? query.gt("id", cursor) : query.gte("id", gte);
