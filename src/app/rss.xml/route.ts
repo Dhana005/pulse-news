@@ -4,6 +4,10 @@ import { getCategoryLabel } from "@/lib/categories";
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export const revalidate = 300;
+// Forces per-request rendering instead of build-time prerendering — this
+// route's DB query was repeatedly the cause of build failures on
+// 2026-09-02 (see the homepage's identical fix and comment).
+export const dynamic = "force-dynamic";
 
 function escapeXml(value: string): string {
   return value.replace(/[<>&'"]/g, (char) => {

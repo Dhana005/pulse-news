@@ -41,6 +41,14 @@ const RIVER_CATEGORIES = ["tamilnadu", "india", "world", "business"];
 
 // News content changes frequently — revalidate rather than freeze at build time.
 export const revalidate = 60;
+// Forces per-request rendering instead of build-time prerendering — this
+// page's DB queries were the recurring cause of build failures on
+// 2026-09-02 (a Postgres statement-timeout hit repeatedly here specifically,
+// even after fixing the underlying slow queries; see 0019/0020/0021
+// migrations). `revalidate` alone still lets Next.js attempt static
+// generation at build time when possible, which is exactly the failure
+// mode observed — this opts out of that entirely.
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const [{ lead, side }, featured, mostRead, readings, riverArticles] = await Promise.all([

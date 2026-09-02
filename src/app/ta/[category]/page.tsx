@@ -10,17 +10,21 @@ import TelegramFollowCard from "@/components/TelegramFollowCard";
 import AmazonDealsCard from "@/components/AmazonDealsCard";
 import DisplayAd from "@/components/DisplayAd";
 import MultiplexAd from "@/components/MultiplexAd";
-import { CATEGORIES, getCategoryLabel, isValidCategory } from "@/lib/categories";
+import { getCategoryLabel, isValidCategory } from "@/lib/categories";
 import { getTrending, getCategoryArticles } from "@/lib/data";
 import { CATEGORY_SEO } from "@/lib/seo";
 
 const PAGE_SIZE = 6;
 
 export const revalidate = 60;
-
-export function generateStaticParams() {
-  return CATEGORIES.map((c) => ({ category: c.key }));
-}
+// Forces per-request rendering instead of build-time prerendering — these
+// pages' DB queries were repeatedly the cause of build failures throughout
+// 2026-09-02 (tamilnadu, india, world, gold, business, sports all hit a
+// Postgres statement-timeout during `next build` at different points; see
+// the homepage's identical fix and its comment for the full explanation).
+// generateStaticParams is dropped since it's moot once nothing is
+// statically generated at build time.
+export const dynamic = "force-dynamic";
 
 type Params = Promise<{ category: string }>;
 
